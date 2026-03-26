@@ -203,6 +203,7 @@ html, body {
   border-right: none;
   max-height: calc(100vh - 100px);
   overflow-y: auto;
+  will-change: transform, opacity;
 }
 
 #toolsPanel.visible {
@@ -236,6 +237,7 @@ html, body {
   border-right: none;
   max-height: calc(100vh - 100px);
   overflow-y: auto;
+  will-change: transform, opacity;
 }
 
 #settingsPanel.visible {
@@ -853,7 +855,7 @@ html, body {
   </div>
 </div>
 
-<script type="module">
+<script type="module" defer>
 import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8";
 
 // ===== СОСТОЯНИЕ ПРИЛОЖЕНИЯ =====
@@ -1078,7 +1080,8 @@ function togglePanelsWithFist() {
 }
 
 function handlePanelHover(point) {
-  const element = document.elementFromPoint(point.x * window.innerWidth, point.y * window.innerHeight);
+  const displayX = isCameraMirrored ? (1 - point.x) : point.x;
+  const element = document.elementFromPoint(displayX * window.innerWidth, point.y * window.innerHeight);
   
   if (toolsPanel.contains(element) && !toolsPanel.classList.contains('visible')) {
     toolsPanel.classList.add('visible');
@@ -1211,13 +1214,23 @@ function handleHand(landmarks) {
 }
 
 function updateCursor(point, isPinching) {
-  pinchCursor.style.left = point.x * window.innerWidth + "px";
+  const cursorX = isCameraMirrored ? (1 - point.x) * window.innerWidth : point.x * window.innerWidth;
+  pinchCursor.style.left = cursorX + "px";
   pinchCursor.style.top = point.y * window.innerHeight + "px";
   pinchCursor.classList.toggle("active", isPinching);
 }
 
 // ===== РИСОВАНИЕ =====
+function getDrawPoint(point) {
+  return {
+    x: isCameraMirrored ? (1 - point.x) : point.x,
+    y: point.y
+  };
+}
+
 function handleDrawing(point, isPinching) {
+  const drawPoint = getDrawPoint(point);
+  
   if (isPinching && !drawing) {
     drawing = true;
     if (state.tool === "pen") {
@@ -1227,7 +1240,7 @@ function handleDrawing(point, isPinching) {
         color: state.color,
         width: state.width,
         opacity: state.opacity,
-        points: [{ x: point.x, y: point.y }]
+        points: [{ x: drawPoint.x, y: drawPoint.y }]
       };
     } else {
       state.current = {
@@ -1236,8 +1249,8 @@ function handleDrawing(point, isPinching) {
         color: state.tool === 'eraser' ? null : state.color,
         width: state.width,
         opacity: state.opacity,
-        start: { x: point.x, y: point.y },
-        end: { x: point.x, y: point.y }
+        start: { x: drawPoint.x, y: drawPoint.y },
+        end: { x: drawPoint.x, y: drawPoint.y }
       };
     }
     return;
@@ -1245,9 +1258,9 @@ function handleDrawing(point, isPinching) {
   
   if (isPinching && drawing && state.current) {
     if (state.current.type === "pen") {
-      state.current.points.push({ x: point.x, y: point.y });
+      state.current.points.push({ x: drawPoint.x, y: drawPoint.y });
     } else {
-      state.current.end = { x: point.x, y: point.y };
+      state.current.end = { x: drawPoint.x, y: drawPoint.y };
     }
   }
   
@@ -1366,9 +1379,9 @@ let clickStartTime = 0;
 const CLICK_TIME_THRESHOLD = 500;
 
 function getElementAtPoint(x, y) {
-  const screenX = x * window.innerWidth;
+  const displayX = isCameraMirrored ? (1 - x) * window.innerWidth : x * window.innerWidth;
   const screenY = y * window.innerHeight;
-  return document.elementFromPoint(screenX, screenY);
+  return document.elementFromPoint(displayX, screenY);
 }
 
 function isClickableElement(element) {
@@ -1429,7 +1442,8 @@ function handleElementClick(element) {
     }, 200);
   } else if (clickableElement.type === 'range') {
     const rect = clickableElement.getBoundingClientRect();
-    const x = (lastPoint.x * window.innerWidth - rect.left) / rect.width;
+    const displayX = isCameraMirrored ? (1 - lastPoint.x) : lastPoint.x;
+    const x = (displayX * window.innerWidth - rect.left) / rect.width;
     const value = Math.min(Math.max(x, 0), 1);
     const min = parseFloat(clickableElement.min) || 0;
     const max = parseFloat(clickableElement.max) || 100;
