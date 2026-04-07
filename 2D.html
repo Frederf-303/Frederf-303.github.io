@@ -182,8 +182,9 @@ html, body {
 #toolsPanel {
   position: fixed;
   left: 20px;
+  right: auto;
   top: 80px;
-  width: 380px;
+  width: 420px;
   background: var(--glass-dark);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--glass-border);
@@ -193,7 +194,7 @@ html, body {
   flex-direction: column;
   padding: 32px 28px;
   gap: 32px;
-  transform: translateX(-120%);
+  transform: translateX(120%);
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
               opacity 0.4s ease,
               box-shadow 0.3s;
@@ -215,9 +216,10 @@ html, body {
 /* ===== ПАНЕЛЬ НАСТРОЕК ===== */
 #settingsPanel {
   position: fixed;
-  left: 20px;
+  right: 20px;
+  left: auto;
   top: 80px;
-  width: 380px;
+  width: 420px;
   background: var(--glass-dark);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--glass-border);
@@ -302,7 +304,7 @@ html, body {
   font-weight: 600;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--accent-primary);
+  color: #fff;
   padding-left: 6px;
   border-left: 3px solid var(--accent-primary);
   line-height: 1.2;
@@ -618,7 +620,7 @@ html, body {
   align-items: center;
   gap: 12px;
   border: 1px solid var(--accent-primary);
-  color: var(--accent-primary);
+  color: #fff;
   box-shadow: 0 0 30px rgba(75,227,255,0.3);
 }
 
@@ -728,9 +730,9 @@ html, body {
         <button class="btn" onclick="setTool('triangle')" id="tool-triangle">
           <span class="btn-icon">🔺</span>Треуг.
         </button>
-        <button class="btn" onclick="setTool('eraser')" id="tool-eraser">
-          <span class="btn-icon">🧹</span>Ластик
-        </button>
+      <button class="btn" onclick="setTool('arrow')" id="tool-arrow">
+        <span class="btn-icon">➤</span>Стрелка
+      </button>
       </div>
     </div>
 
@@ -999,9 +1001,7 @@ window.selectColor = (color) => {
     activeSwatch.classList.add('active');
   }
   
-  if (state.tool !== 'eraser') {
-    pinchCursor.style.background = `radial-gradient(circle at 30% 30%, rgba(${hexToRgb(state.color)}, 0.95), rgba(${hexToRgb(state.color)}, 0.8))`;
-  }
+  pinchCursor.style.background = `radial-gradient(circle at 30% 30%, rgba(${hexToRgb(state.color)}, 0.95), rgba(${hexToRgb(state.color)}, 0.8))`;
   
   showHoverIndicator(`🎨 Цвет: ${color}`);
 };
@@ -1057,25 +1057,30 @@ function switchMode(mode) {
 
 // ===== УПРАВЛЕНИЕ ПАНЕЛЯМИ =====
 function togglePanelsWithFist() {
-  if (!toolsPanel.classList.contains('visible') && !settingsPanel.classList.contains('visible')) {
+  const toolsVisible = toolsPanel.classList.contains('visible');
+  const settingsVisible = settingsPanel.classList.contains('visible');
+  if (!toolsVisible && !settingsVisible) {
+    // Открываем обе панели одной загрузкой
     toolsPanel.classList.add('visible');
-    settingsPanel.classList.remove('visible');
+    settingsPanel.classList.add('visible');
     activePanel = 'tools';
     switchMode('ui');
-    showHoverIndicator('🖌️ Панель инструментов открыта');
-  } 
-  else if (toolsPanel.classList.contains('visible') && !settingsPanel.classList.contains('visible')) {
-    toolsPanel.classList.remove('visible');
-    settingsPanel.classList.add('visible');
-    activePanel = 'settings';
-    showHoverIndicator('⚙️ Панель настроек открыта');
-  }
-  else if (settingsPanel.classList.contains('visible')) {
-    settingsPanel.classList.remove('visible');
-    toolsPanel.classList.remove('visible');
-    activePanel = null;
-    switchMode('drawing');
-    showHoverIndicator('👊 Панели закрыты');
+    showHoverIndicator('🖌️ Панели открыты');
+  } else {
+    // Если хотя бы одна панель открыта, переключаемся: если обе открыты - закрываем обе; иначе открываем обе
+    if (toolsVisible && settingsVisible) {
+      toolsPanel.classList.remove('visible');
+      settingsPanel.classList.remove('visible');
+      activePanel = null;
+      switchMode('drawing');
+      showHoverIndicator('👊 Панели закрыты');
+    } else {
+      toolsPanel.classList.add('visible');
+      settingsPanel.classList.add('visible');
+      activePanel = 'tools';
+      switchMode('ui');
+      showHoverIndicator('🖌️ Панели открыты');
+    }
   }
 }
 
@@ -1084,6 +1089,10 @@ function handlePanelHover(point) {
   const element = document.elementFromPoint(displayX * window.innerWidth, point.y * window.innerHeight);
   
   if (toolsPanel.contains(element) && !toolsPanel.classList.contains('visible')) {
+    // Не открывать автоматически, если обе панели закрыты
+    if (!toolsPanel.classList.contains('visible') && !settingsPanel.classList.contains('visible')) {
+      return;
+    }
     toolsPanel.classList.add('visible');
     settingsPanel.classList.remove('visible');
     activePanel = 'tools';
@@ -1091,6 +1100,10 @@ function handlePanelHover(point) {
     showHoverIndicator('🖌️ Панель инструментов');
   }
   else if (settingsPanel.contains(element) && !settingsPanel.classList.contains('visible')) {
+    // Не открывать автоматически, если обе панели закрыты
+    if (!toolsPanel.classList.contains('visible') && !settingsPanel.classList.contains('visible')) {
+      return;
+    }
     settingsPanel.classList.add('visible');
     toolsPanel.classList.remove('visible');
     activePanel = 'settings';
@@ -1163,10 +1176,10 @@ function handleHand(landmarks) {
   const thumb = landmarks[4];
   const index = landmarks[8];
   if (!thumb || !index) return;
-  
+
   const pinchDistance = Math.hypot(thumb.x - index.x, thumb.y - index.y);
   const isPinching = pinchDistance < PINCH_THRESHOLD;
-  
+
   let isFistNow = false;
   try {
     isFistNow = isFistGesture(landmarks);
@@ -1189,9 +1202,10 @@ function handleHand(landmarks) {
   
   if (fistToggleCooldown > 0) fistToggleCooldown--;
   
+  // Attach drawing point to the index finger tip instead of midpoint
   const rawPoint = {
-    x: (thumb.x + index.x) / 2,
-    y: (thumb.y + index.y) / 2
+    x: index.x,
+    y: index.y
   };
   
   if (lastPoint) {
@@ -1246,7 +1260,7 @@ function handleDrawing(point, isPinching) {
       state.current = {
         type: state.tool,
         tool: state.tool,
-        color: state.tool === 'eraser' ? null : state.color,
+        color: state.color,
         width: state.width,
         opacity: state.opacity,
         start: { x: drawPoint.x, y: drawPoint.y },
@@ -1301,20 +1315,21 @@ function draw() {
 function drawAction(action, isPreview = false) {
   if (!action) return;
   ctx.save();
-  const color = action.tool === 'eraser' ? 'rgba(0,0,0,0)' : action.color;
+  const color = action.color;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineWidth = action.width;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.globalAlpha = isPreview ? 0.7 : action.opacity;
-  if (action.tool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
+  // Эмуляция ластика удалена; рисование осуществляется цветом или прозрачностью
   
   if (action.type === "pen") drawPen(action);
   else if (action.type === "line") drawLine(action);
   else if (action.type === "rect") drawRect(action);
   else if (action.type === "circle") drawCircle(action);
   else if (action.type === "triangle") drawTriangle(action);
+  else if (action.type === "arrow") drawArrow(action);
   
   ctx.restore();
 }
@@ -1369,6 +1384,35 @@ function drawTriangle(action) {
   ctx.lineTo((x1 + x2) / 2, y1);
   ctx.lineTo(x2, y2);
   ctx.closePath();
+  ctx.stroke();
+}
+
+function drawArrow(action) {
+  // Compute endpoints in pixels
+  const sx = action.start.x * canvas.width;
+  const sy = action.start.y * canvas.height;
+  const ex = action.end.x * canvas.width;
+  const ey = action.end.y * canvas.height;
+  const dx = ex - sx;
+  const dy = ey - sy;
+  const lengthPx = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx);
+
+  // Arrowhead size scales with line length but capped to avoid huge heads
+  const headLen = Math.max(8, Math.min(lengthPx * 0.2, 120));
+
+  // Shaft
+  ctx.beginPath();
+  ctx.moveTo(sx, sy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
+
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - headLen * Math.cos(angle - Math.PI / 6), ey - headLen * Math.sin(angle - Math.PI / 6));
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - headLen * Math.cos(angle + Math.PI / 6), ey - headLen * Math.sin(angle + Math.PI / 6));
   ctx.stroke();
 }
 
@@ -1542,16 +1586,12 @@ window.setTool = (tool) => {
   const cursor = document.getElementById('pinchCursor');
   cursor.classList.remove('cursor-eraser', 'cursor-fist');
   
-  if (tool === 'eraser') {
-    cursor.style.background = 'radial-gradient(circle at 30% 30%, #ffffff, #e0e0e0)';
-    cursor.classList.add('cursor-eraser');
-  } else {
-    cursor.style.background = `radial-gradient(circle at 30% 30%, rgba(${hexToRgb(state.color)}, 0.95), rgba(${hexToRgb(state.color)}, 0.8))`;
-  }
+  // Электронный штрих-курсор: всегда цветной стиль стрелки, не используем ластик
+  cursor.style.background = `radial-gradient(circle at 30% 30%, rgba(${hexToRgb(state.color)}, 0.95), rgba(${hexToRgb(state.color)}, 0.8))`;
 };
 
 function getToolName(tool) {
-  const names = { pen: 'Кисть', line: 'Отрезок', rect: 'Прямоуг.', circle: 'Круг', triangle: 'Треуг.', eraser: 'Ластик' };
+  const names = { pen: 'Кисть', line: 'Отрезок', rect: 'Прямоуг.', circle: 'Круг', triangle: 'Треуг.', arrow: 'Стрелка' };
   return names[tool] || tool;
 }
 
@@ -1745,6 +1785,37 @@ loop();
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 setTool('pen');
 switchMode('drawing');
+</script>
+<script>
+(function(){
+  const btn = document.getElementById('toggleSidebar');
+  const tools = document.getElementById('toolsPanel');
+  const settings = document.getElementById('settingsPanel');
+  if (!btn || !tools || !settings) return;
+  btn.addEventListener('click', () => {
+    const tVisible = tools.classList.contains('visible');
+    const sVisible = settings.classList.contains('visible');
+    if (!tVisible && !sVisible) {
+      tools.classList.add('visible');
+      settings.classList.add('visible');
+      activePanel = 'tools';
+      switchMode('ui');
+      showHoverIndicator('Панели открыты');
+    } else if (tVisible && sVisible) {
+      tools.classList.remove('visible');
+      settings.classList.remove('visible');
+      activePanel = null;
+      switchMode('drawing');
+      showHoverIndicator('Панели закрыты');
+    } else {
+      tools.classList.add('visible');
+      settings.classList.add('visible');
+      activePanel = 'tools';
+      switchMode('ui');
+      showHoverIndicator('Панели открыты');
+    }
+  });
+})();
 </script>
 </body>
 </html>

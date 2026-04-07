@@ -131,7 +131,7 @@ html, body {
   position: fixed;
   left: 20px;
   top: 80px;
-  width: 380px;
+  width: 420px;
   background: var(--glass-dark);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--glass-border);
@@ -156,6 +156,10 @@ html, body {
   opacity: 1;
   pointer-events: auto;
 }
+
+/* Открывать панели с разных сторон: инструменты слева, настройки справа */
+#toolsPanel { left: 20px; right: auto; }
+#settingsPanel { right: 20px; left: auto; transform: translateX(120%); }
 
 .panel-indicator {
   position: absolute;
@@ -198,29 +202,14 @@ html, body {
   font-weight: 600;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--accent-primary);
+  color: #fff;
   padding-left: 6px;
   border-left: 3px solid var(--accent-primary);
   line-height: 1.2;
   text-shadow: 0 0 10px rgba(75,227,255,0.3);
 }
 
-/* ===== КНОПКИ ===== */
-.button-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.button-row {
-  display: flex;
-  gap: 12px;
-}
-
 .btn {
-  background: var(--surface-elevated);
-  border: 1px solid rgba(255,255,255,0.04);
-  color: var(--text-soft);
   padding: 14px 12px;
   border-radius: 20px;
   cursor: pointer;
@@ -234,11 +223,24 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  backdrop-filter: blur(5px);
+  background: var(--surface-elevated);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-soft);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  position: relative;
-  overflow: hidden;
+  backdrop-filter: blur(5px);
 }
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.button-row {
+  display: flex;
+  gap: 12px;
+}
+
+// (Old duplicate btn style removed) 
 
 .btn::after {
   content: '';
@@ -669,6 +671,9 @@ html, body {
         <button class="btn" onclick="startDrawing()" id="tool-draw">
           <span class="btn-icon">✏️</span>Кисть 3D
         </button>
+        <button class="btn" onclick="activateFreeMove()" id="tool-free-move">
+          <span class="btn-icon">🧭</span>Свободное перемещение
+        </button>
       </div>
     </div>
 
@@ -1012,27 +1017,32 @@ function togglePanelsWithFist(isFistNow) {
     if (isFistNow && !isFistDetected) {
         const toolsVisible = toolsPanel.classList.contains('visible');
         const settingsVisible = settingsPanel.classList.contains('visible');
-        
+
         if (!toolsVisible && !settingsVisible) {
+            // Открываем обе панели одновременно
             toolsPanel.classList.add('visible');
-            settingsPanel.classList.remove('visible');
+            settingsPanel.classList.add('visible');
             activePanel = 'tools';
             panelsVisible = true;
             clickDetectionState.enabled = true;
-            showHoverIndicator('🖌️ Панель открыта');
-        } else if (toolsVisible && !settingsVisible) {
-            toolsPanel.classList.remove('visible');
-            settingsPanel.classList.add('visible');
-            activePanel = 'settings';
-            clickDetectionState.enabled = true;
-            showHoverIndicator('⚙️ Настройки открыты');
-        } else if (settingsVisible) {
-            settingsPanel.classList.remove('visible');
-            toolsPanel.classList.remove('visible');
-            activePanel = null;
-            panelsVisible = false;
-            clickDetectionState.enabled = false;
-            showHoverIndicator('👊 Панели закрыты');
+            showHoverIndicator('🖌️ Панели открыты');
+        } else {
+            // Если одна или обе панели уже видимы, переключаемся/закрываем их
+            if (toolsVisible && settingsVisible) {
+                toolsPanel.classList.remove('visible');
+                settingsPanel.classList.remove('visible');
+                activePanel = null;
+                panelsVisible = false;
+                clickDetectionState.enabled = false;
+                showHoverIndicator('👊 Панели закрыты');
+            } else {
+                toolsPanel.classList.add('visible');
+                settingsPanel.classList.add('visible');
+                activePanel = 'tools';
+                panelsVisible = true;
+                clickDetectionState.enabled = true;
+                showHoverIndicator('🖌️ Панели открыты');
+            }
         }
         isFistDetected = true;
         updateCursorForFist();
@@ -1643,6 +1653,7 @@ async function initHandDetection() {
 const PINCH_THRESHOLD = 0.08;
 let isPinching = false;
 let transformStart = null;
+let SMOOTHING3D_FACTOR = 0.4;
 
 /* Ускоренное сглаживание позиции курсора */
 function getSmoothedCursorPosition(rawX, rawY) {
@@ -1719,8 +1730,9 @@ function handleHandLandmarks(landmarks) {
   
   const thumb = lm[4];
   const index = lm[8];
-  const cursorX = (thumb.x + index.x) / 2;
-  const cursorY = (thumb.y + index.y) / 2;
+  // Attach drawing cursor to the index finger tip
+  const cursorX = index.x;
+  const cursorY = index.y;
   
   const smoothedCursor = getSmoothedCursorPosition(cursorX, cursorY);
   
@@ -1841,11 +1853,9 @@ function handleHandLandmarks(landmarks) {
 
 /* Получение позиции в 3D пространстве */
 function getWorldPositionFromFingers(thumb, index, depth = -1.5) {
-  let midX = (thumb.x + index.x) / 2;
-  const midY = (thumb.y + index.y) / 2;
-  
-  const x = (midX - 0.5) * 2 * camera.position.z;
-  const y = -(midY - 0.5) * 2 * camera.position.z;
+  // Attach world position to the index finger tip rather than midpoint
+  const x = (index.x - 0.5) * 2 * camera.position.z;
+  const y = -(index.y - 0.5) * 2 * camera.position.z;
   
   return { x, y, z: depth };
 }
@@ -1857,7 +1867,11 @@ function handleDrawing(position, isStart) {
     currentTube = null;
   } else if (tubePoints.length > 0) {
     const lastPoint = tubePoints[tubePoints.length - 1];
-    const newPoint = new THREE.Vector3(position.x, position.y, position.z);
+    // Smoothed new point based on last point
+    const nx = lastPoint.x * (1 - SMOOTHING3D_FACTOR) + position.x * SMOOTHING3D_FACTOR;
+    const ny = lastPoint.y * (1 - SMOOTHING3D_FACTOR) + position.y * SMOOTHING3D_FACTOR;
+    const nz = lastPoint.z * (1 - SMOOTHING3D_FACTOR) + position.z * SMOOTHING3D_FACTOR;
+    const newPoint = new THREE.Vector3(nx, ny, nz);
     
     if (lastPoint.distanceTo(newPoint) > 0.05) {
       tubePoints.push(newPoint);
@@ -1972,6 +1986,17 @@ function startHandLoop() {
   loop();
 }
 
+function activateFreeMove() {
+  if (typeof setMode === 'function') {
+    setMode('movexy');
+  } else {
+    currentMode = 'movexy';
+    const modeTextEl = document.getElementById('modeText');
+    if (modeTextEl) modeTextEl.textContent = 'Режим: Свободное перемещение';
+  }
+  showHoverIndicator('Свободное перемещение включено');
+}
+
 /* ЭКСПОРТ ИЗОБРАЖЕНИЙ */
 window.saveWithBackground = () => {
   const canvas = document.createElement("canvas");
@@ -2056,24 +2081,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   toggleSidebar.addEventListener('click', () => {
     const toolsVisible = toolsPanel.classList.contains('visible');
     const settingsVisible = settingsPanel.classList.contains('visible');
-    
+    const bothVisible = toolsVisible && settingsVisible;
+
     if (!toolsVisible && !settingsVisible) {
+      // Open both panels (as in fist gesture)
       toolsPanel.classList.add('visible');
-      settingsPanel.classList.remove('visible');
+      settingsPanel.classList.add('visible');
       activePanel = 'tools';
       panelsVisible = true;
       clickDetectionState.enabled = true;
-    } else if (toolsVisible) {
+    } else if (bothVisible) {
+      // Close both panels
       toolsPanel.classList.remove('visible');
-      settingsPanel.classList.add('visible');
-      activePanel = 'settings';
-      clickDetectionState.enabled = true;
-    } else {
       settingsPanel.classList.remove('visible');
-      toolsPanel.classList.remove('visible');
       activePanel = null;
       panelsVisible = false;
       clickDetectionState.enabled = false;
+    } else {
+      // If only one is visible, also show both for consistency
+      toolsPanel.classList.add('visible');
+      settingsPanel.classList.add('visible');
+      activePanel = 'tools';
+      panelsVisible = true;
+      clickDetectionState.enabled = true;
     }
   });
   
