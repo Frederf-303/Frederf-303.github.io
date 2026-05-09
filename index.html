@@ -3,920 +3,1939 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Draw AR | Главная</title>
+    <title>Draw AR — рисуй жестами в реальном времени</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"></noscript>
     <style>
-
         :root {
-            --bg: #0b0b10;
+            --bg: #07070d;
+            --bg-soft: #0e0e18;
             --panel: #14141b;
             --panel-light: #1e1e28;
             --border: #26263a;
             --accent: #5ddcff;
+            --accent-2: #c084fc;
+            --accent-3: #00ffcc;
             --accent-glow: rgba(93, 220, 255, 0.3);
             --text: #ffffff;
             --muted: #9aa0aa;
             --transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg);
             color: var(--text);
             overflow-x: hidden;
             line-height: 1.6;
+            cursor: none;
         }
+        @media (max-width: 900px) { body { cursor: auto; } }
+        a, button { cursor: none; }
+        @media (max-width: 900px) { a, button { cursor: pointer; } }
 
-        /* Liquid Glass Background Effect */
-        #liquid-glass-bg {
+        /* ===== CUSTOM CURSOR ===== */
+        .cursor-dot, .cursor-ring {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -2;
+            top: 0; left: 0;
             pointer-events: none;
-            overflow: hidden;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: screen;
+        }
+        .cursor-dot {
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 14px var(--accent), 0 0 30px rgba(93,220,255,0.5);
+            transition: width 0.2s, height 0.2s, background 0.2s;
+        }
+        .cursor-ring {
+            width: 36px; height: 36px;
+            border: 1.5px solid rgba(93, 220, 255, 0.5);
+            border-radius: 50%;
+            transition: width 0.25s var(--ease-snap), height 0.25s var(--ease-snap),
+                        background 0.25s, border-color 0.25s;
+        }
+        .cursor-dot.hover { width: 14px; height: 14px; background: var(--accent-2); box-shadow: 0 0 20px var(--accent-2); }
+        .cursor-ring.hover {
+            width: 56px; height: 56px;
+            border-color: rgba(192, 132, 252, 0.6);
+            background: rgba(192, 132, 252, 0.08);
+        }
+        @media (max-width: 900px) { .cursor-dot, .cursor-ring { display: none; } }
+
+        /* ===== SCROLL PROGRESS ===== */
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px; width: 0;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+            z-index: 9998;
+            box-shadow: 0 0 12px var(--accent);
+            transition: width 0.1s linear;
         }
 
-        #shapes-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        /* ===== LIQUID GLASS BACKGROUND ===== */
+        #liquid-glass-bg {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -2; pointer-events: none; overflow: hidden;
         }
-
+        #shapes-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .light-source {
             position: absolute;
-            top: 10%;
-            left: 15%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(ellipse at center, 
-                rgba(93, 220, 255, 0.15) 0%, 
+            top: 10%; left: 15%;
+            width: 600px; height: 600px;
+            background: radial-gradient(ellipse at center,
+                rgba(93, 220, 255, 0.15) 0%,
                 rgba(93, 220, 255, 0.05) 30%,
                 transparent 70%);
-            border-radius: 50%;
-            filter: blur(60px);
+            border-radius: 50%; filter: blur(60px);
             animation: lightPulse 8s ease-in-out infinite;
             pointer-events: none;
         }
-
         .light-source-secondary {
-            top: 60%;
-            right: 10%;
-            left: auto;
-            background: radial-gradient(ellipse at center, 
-                rgba(192, 132, 252, 0.12) 0%, 
+            top: 60%; right: 10%; left: auto;
+            background: radial-gradient(ellipse at center,
+                rgba(192, 132, 252, 0.12) 0%,
                 rgba(192, 132, 252, 0.04) 30%,
                 transparent 70%);
             animation: lightPulse 10s ease-in-out infinite reverse;
         }
-
         @keyframes lightPulse {
             0%, 100% { opacity: 0.8; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.1); }
         }
-
-        /* Liquid Glass Overlay */
         #liquid-glass-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            pointer-events: none;
-            background: 
-                radial-gradient(ellipse 80% 60% at 20% 30%, 
-                    rgba(30, 50, 100, 0.25) 0%, 
-                    transparent 60%),
-                radial-gradient(ellipse 60% 80% at 80% 70%, 
-                    rgba(40, 60, 120, 0.2) 0%, 
-                    transparent 50%),
-                linear-gradient(180deg, 
-                    rgba(11, 15, 30, 0.4) 0%, 
-                    rgba(20, 30, 60, 0.5) 50%,
-                    rgba(10, 15, 35, 0.45) 100%);
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 30%, rgba(30, 50, 100, 0.25) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 80% 70%, rgba(40, 60, 120, 0.2) 0%, transparent 50%),
+                linear-gradient(180deg, rgba(11, 15, 30, 0.4) 0%, rgba(20, 30, 60, 0.5) 50%, rgba(10, 15, 35, 0.45) 100%);
             backdrop-filter: blur(8px) saturate(0.9);
             -webkit-backdrop-filter: blur(8px) saturate(0.9);
         }
-
-        /* Glass Shimmer Effect */
         .glass-shimmer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            pointer-events: none;
-            background: linear-gradient(
-                135deg,
-                transparent 0%,
-                rgba(93, 220, 255, 0.02) 20%,
-                transparent 40%,
-                rgba(93, 220, 255, 0.03) 60%,
-                transparent 80%
-            );
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background: linear-gradient(135deg, transparent 0%, rgba(93, 220, 255, 0.02) 20%, transparent 40%, rgba(93, 220, 255, 0.03) 60%, transparent 80%);
             animation: shimmer 15s linear infinite;
         }
-
         @keyframes shimmer {
             0% { transform: translateX(-100%) translateY(-100%); }
             100% { transform: translateX(100%) translateY(100%); }
         }
-
-        /* Particles (kept for additional effect) */
         #particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            pointer-events: none;
-            will-change: transform;
-            opacity: 0.3;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            will-change: transform; opacity: 0.3;
         }
 
-        /* Navigation */
+        /* ===== NAVBAR ===== */
         .navbar {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 1.5rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            position: fixed; top: 0;
+            width: 100%; padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
             z-index: 1000;
-            background: rgba(11, 11, 16, 0.9);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border);
+            background: rgba(7, 7, 13, 0.6);
+            backdrop-filter: blur(18px) saturate(150%);
+            -webkit-backdrop-filter: blur(18px) saturate(150%);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: padding 0.3s ease, background 0.3s ease;
         }
+        .navbar.shrunk { padding: 0.6rem 2rem; background: rgba(7, 7, 13, 0.85); }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .logo { display: flex; align-items: center; gap: 12px; }
         .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--accent), #00ffcc);
-            border-radius: 8px;
-            position: relative;
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3));
+            border-radius: 10px; position: relative;
+            box-shadow: 0 0 20px rgba(93, 220, 255, 0.4);
+            animation: logoGlow 4s ease-in-out infinite;
         }
-
         .logo-icon::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 8px;
-            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+            content: ''; position: absolute; inset: 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2));
         }
-
+        @keyframes logoGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(93, 220, 255, 0.4); }
+            50%      { box-shadow: 0 0 35px rgba(93, 220, 255, 0.7), 0 0 60px rgba(192, 132, 252, 0.3); }
+        }
         .logo-text {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.5rem; font-weight: 800;
             background: linear-gradient(to right, #ffffff, var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            letter-spacing: -0.5px;
         }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-        }
-
+        .nav-links { display: flex; gap: 2rem; }
         .nav-link {
-            color: var(--muted);
-            text-decoration: none;
-            font-weight: 500;
-            transition: var(--transition);
-            position: relative;
-            padding: 0.5rem 0;
+            color: var(--muted); text-decoration: none;
+            font-weight: 500; transition: var(--transition);
+            position: relative; padding: 0.5rem 0;
         }
-
-        .nav-link:hover {
-            color: var(--accent);
-        }
-
+        .nav-link:hover { color: var(--accent); }
         .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
+            content: ''; position: absolute;
+            bottom: 0; left: 0;
+            width: 0; height: 2px;
             background: var(--accent);
             transition: var(--transition);
         }
+        .nav-link:hover::after { width: 100%; }
 
-        .nav-link:hover::after {
-            width: 100%;
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 0 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-            opacity: 0.15;
-            z-index: -1;
-        }
-
-        .hero-title {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(to right, #ffffff, var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1.2;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 1s ease forwards;
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1rem, 2vw, 1.25rem);
-            color: var(--muted);
-            text-align: center;
-            max-width: 600px;
-            margin-bottom: 3rem;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 1s ease 0.2s forwards;
-        }
-
-        .scroll-indicator {
-            position: absolute;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            opacity: 0;
-            animation: fadeIn 1s ease 0.8s forwards;
-        }
-
-        .scroll-text {
-            font-size: 0.875rem;
-            color: var(--muted);
-            letter-spacing: 2px;
-        }
-
-        .scroll-line {
-            width: 1px;
-            height: 60px;
-            background: linear-gradient(to bottom, var(--accent), transparent);
-        }
-
-        /* Guides Section */
-        .guides {
-            padding: 8rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-title {
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 4rem;
-            background: linear-gradient(to right, #ffffff, var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            opacity: 0;
-        }
-
-        .guides-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 3rem;
-            margin-bottom: 8rem;
-        }
-
-        .guide-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 2.5rem;
-            opacity: 0;
-            transform: translateY(50px);
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .guide-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .guide-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(93, 220, 255, 0.05), transparent);
-            opacity: 0;
-            transition: var(--transition);
-        }
-
-        .guide-card:hover::before {
-            opacity: 1;
-        }
-
-        .guide-icon {
-            width: 60px;
-            height: 60px;
-            background: var(--panel-light);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
-            color: var(--accent);
-        }
-
-        .guide-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
-
-        .guide-steps {
-            list-style: none;
-            margin-top: 1.5rem;
-        }
-
-        .guide-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            padding: 0.75rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            border-left: 3px solid transparent;
-            transition: var(--transition);
-        }
-
-        .guide-step:hover {
-            background: rgba(93, 220, 255, 0.05);
-            border-left-color: var(--accent);
-        }
-
-        .step-number {
-            min-width: 28px;
-            height: 28px;
-            background: var(--accent);
-            color: var(--bg);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-
-        .step-text {
-            color: var(--muted);
-            flex: 1;
-        }
-
-        /* Mode Selection */
-        .mode-selection {
-            padding: 6rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .mode-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 4rem;
-        }
-
-        .mode-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 3rem 2rem;
-            text-align: center;
-            transition: var(--transition);
-            opacity: 0;
-            transform: translateY(30px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .mode-card:hover {
-            transform: translateY(-10px);
-            border-color: var(--accent);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .mode-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(93, 220, 255, 0.1), transparent);
-            opacity: 0;
-            transition: var(--transition);
-        }
-
-        .mode-card:hover::before {
-            opacity: 1;
-        }
-
-        .mode-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            background: var(--panel-light);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: var(--accent);
-        }
-
-        .mode-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
-
-        .mode-description {
-            color: var(--muted);
-            margin-bottom: 2rem;
-        }
-
-        .mode-button {
-            display: inline-block;
-            padding: 1rem 2rem;
+        .nav-cta {
+            padding: 0.55rem 1.4rem;
             background: linear-gradient(135deg, var(--accent), #00b8d4);
             color: var(--bg);
             text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.9rem;
             transition: var(--transition);
-            border: none;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            font-size: 1rem;
+            box-shadow: 0 6px 18px rgba(93, 220, 255, 0.3);
         }
+        .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(93, 220, 255, 0.5); }
 
-        .mode-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(93, 220, 255, 0.3);
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 6rem 2rem 3rem;
+            position: relative; overflow: hidden;
         }
-
-        .mode-button::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
-            opacity: 0;
-            transition: var(--transition);
-        }
-
-        .mode-button:hover::after {
-            opacity: 1;
-        }
-
-        /* Footer */
-        .footer {
-            padding: 4rem 2rem;
-            border-top: 1px solid var(--border);
+        .hero-content {
+            max-width: 900px;
             text-align: center;
-            margin-top: 4rem;
+            position: relative;
+            z-index: 2;
         }
-
-        .footer-text {
-            color: var(--muted);
-            font-size: 0.875rem;
-        }
-
-        /* Animations */
-        @keyframes fadeUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-            }
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 1rem;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .guides-grid {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-
-            .guide-card {
-                padding: 1.5rem;
-            }
-
-            .hero {
-                padding: 0 1rem;
-            }
-
-            .hero-title {
-                font-size: 2.5rem;
-            }
-        }
-
-        /* Intersection Observer Animation Classes */
-        .fade-in {
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px;
+            background: rgba(93, 220, 255, 0.08);
+            border: 1px solid rgba(93, 220, 255, 0.25);
+            border-radius: 999px;
+            font-size: 0.85rem; font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
             opacity: 0;
-            transform: translateY(30px);
-            transition: var(--transition);
+            animation: heroFadeIn 0.8s ease 0.1s forwards;
+        }
+        .hero-badge::before {
+            content: ''; width: 8px; height: 8px;
+            background: var(--accent-3); border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-3);
+            animation: pulseDot 1.6s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%      { transform: scale(1.4); opacity: 0.6; }
+        }
+        .hero-title {
+            font-size: clamp(2.8rem, 7vw, 5.5rem);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -2px;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .hero-title .word {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(50px);
+            animation: heroWordIn 0.9s var(--ease-snap) forwards;
+        }
+        .hero-title .word:nth-child(1) { animation-delay: 0.25s; }
+        .hero-title .word:nth-child(2) { animation-delay: 0.4s; }
+        .hero-title .word:nth-child(3) { animation-delay: 0.55s; }
+        .hero-title .word:nth-child(4) { animation-delay: 0.7s; }
+        .hero-title .word:nth-child(5) { animation-delay: 0.85s; }
+        @keyframes heroWordIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .hero-title .gradient {
+            background: linear-gradient(120deg, var(--accent) 0%, #fff 30%, var(--accent-2) 60%, var(--accent) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: heroWordIn 0.9s var(--ease-snap) forwards, gradientSweep 5s linear infinite;
+        }
+        @keyframes gradientSweep {
+            0%   { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .hero-subtitle {
+            font-size: clamp(1rem, 1.6vw, 1.2rem);
+            color: var(--muted);
+            max-width: 620px;
+            margin: 0 auto 2.5rem;
+            opacity: 0;
+            animation: heroFadeIn 1s ease 1s forwards;
+        }
+        @keyframes heroFadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        .hero-cta-row {
+            display: flex; gap: 16px; flex-wrap: wrap;
+            justify-content: center; margin-bottom: 3rem;
+            opacity: 0;
+            animation: heroFadeIn 1s ease 1.2s forwards;
+        }
+        .btn-primary, .btn-secondary {
+            padding: 1.1rem 2.2rem;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: transform 0.4s var(--ease-snap), box-shadow 0.4s, border-color 0.3s;
+            display: inline-flex; align-items: center; gap: 10px;
+            border: 1px solid transparent;
+            position: relative; overflow: hidden;
+            will-change: transform;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #00b8d4);
+            color: var(--bg);
+            box-shadow: 0 12px 32px rgba(93, 220, 255, 0.35);
+        }
+        .btn-primary::after {
+            content: ''; position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
+        }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(93, 220, 255, 0.55); }
+        .btn-primary:hover::after { left: 100%; }
+        .btn-secondary {
+            background: rgba(192, 132, 252, 0.08);
+            color: #ddc8ff;
+            border-color: rgba(192, 132, 252, 0.4);
+            backdrop-filter: blur(10px);
+        }
+        .btn-secondary:hover {
+            background: rgba(192, 132, 252, 0.18);
+            border-color: var(--accent-2);
+            transform: translateY(-3px);
+            box-shadow: 0 16px 36px rgba(192, 132, 252, 0.3);
         }
 
-        .fade-in.visible {
+        .hero-stats {
+            display: flex; gap: 2.5rem; justify-content: center; flex-wrap: wrap;
+            opacity: 0;
+            animation: heroFadeIn 1s ease 1.4s forwards;
+        }
+        .hero-stat-item {
+            text-align: center;
+        }
+        .hero-stat-num {
+            font-size: 2rem; font-weight: 800;
+            background: linear-gradient(135deg, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+        .hero-stat-label {
+            font-size: 0.78rem;
+            color: var(--muted);
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        /* ── Floating UI mockups in hero ── */
+        .hero-floats {
+            position: absolute; inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .float-card {
+            position: absolute;
+            border-radius: 18px;
+            background: rgba(20, 25, 38, 0.7);
+            border: 1px solid rgba(93, 220, 255, 0.18);
+            backdrop-filter: blur(14px);
+            padding: 14px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            opacity: 0;
+            animation: floatCardIn 1s ease forwards;
+        }
+        @keyframes floatCardIn { to { opacity: 1; } }
+
+        .float-card.tools-mock {
+            top: 18%; left: 4%;
+            width: 200px;
+            animation-delay: 1.6s;
+            animation-name: floatCardIn, floatBob;
+            animation-duration: 1s, 6s;
+            animation-timing-function: ease, ease-in-out;
+            animation-iteration-count: 1, infinite;
+            animation-fill-mode: forwards, both;
+        }
+        @keyframes floatBob {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-14px); }
+        }
+        .mock-row {
+            display: flex; gap: 8px; margin-bottom: 10px;
+        }
+        .mock-pill {
+            flex: 1; height: 22px;
+            background: rgba(93,220,255,0.1);
+            border: 1px solid rgba(93,220,255,0.2);
+            border-radius: 8px;
+        }
+        .mock-pill.active { background: rgba(93,220,255,0.35); border-color: var(--accent); }
+        .mock-swatch-row { display: flex; gap: 6px; }
+        .mock-sw { width: 18px; height: 18px; border-radius: 50%; }
+        .mock-sw.s1 { background: #ff5b5b; box-shadow: 0 0 10px #ff5b5b; }
+        .mock-sw.s2 { background: #ffd84a; }
+        .mock-sw.s3 { background: #5cff7d; }
+        .mock-sw.s4 { background: #4be3ff; }
+        .mock-sw.s5 { background: #c084fc; }
+
+        .float-card.cube-mock {
+            top: 22%; right: 5%;
+            width: 180px; height: 180px;
+            display: flex; align-items: center; justify-content: center;
+            animation: floatCardIn 1s ease 1.9s forwards, floatBob 7s ease-in-out 1.9s infinite;
+            background: radial-gradient(circle, rgba(192,132,252,0.15), rgba(20,25,38,0.7));
+            border-color: rgba(192, 132, 252, 0.25);
+        }
+        .cube-3d-wrap {
+            width: 80px; height: 80px;
+            transform-style: preserve-3d;
+            animation: cubeRotate 8s linear infinite;
+        }
+        .cube-face {
+            position: absolute; width: 80px; height: 80px;
+            border: 1.5px solid rgba(192, 132, 252, 0.6);
+            background: rgba(192, 132, 252, 0.1);
+            box-shadow: 0 0 18px rgba(192, 132, 252, 0.25);
+        }
+        .cube-face.front  { transform: translateZ(40px); }
+        .cube-face.back   { transform: translateZ(-40px) rotateY(180deg); }
+        .cube-face.right  { transform: rotateY(90deg) translateZ(40px); }
+        .cube-face.left   { transform: rotateY(-90deg) translateZ(40px); }
+        .cube-face.top    { transform: rotateX(90deg) translateZ(40px); }
+        .cube-face.bottom { transform: rotateX(-90deg) translateZ(40px); }
+        @keyframes cubeRotate {
+            0%   { transform: rotateX(0)    rotateY(0); }
+            100% { transform: rotateX(360deg) rotateY(360deg); }
+        }
+
+        .float-card.draw-mock {
+            bottom: 14%; left: 8%;
+            width: 220px; height: 110px;
+            padding: 0;
+            overflow: hidden;
+            animation: floatCardIn 1s ease 2.1s forwards, floatBob 5.5s ease-in-out 2.1s infinite;
+        }
+        .draw-mock svg { width: 100%; height: 100%; }
+        .draw-mock-line {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-dasharray: 400;
+            stroke-dashoffset: 400;
+            animation: drawMockLine 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 6px var(--accent));
+        }
+        @keyframes drawMockLine {
+            0%   { stroke-dashoffset: 400; }
+            50%  { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -400; }
+        }
+        .draw-mock-cursor {
+            position: absolute;
+            width: 14px; height: 14px;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+            border-radius: 50%;
+            box-shadow: 0 0 14px var(--accent);
+            animation: drawMockCursor 4s ease-in-out infinite;
+        }
+        @keyframes drawMockCursor {
+            0%   { left: 14px;  top: 70px; }
+            25%  { left: 70px;  top: 30px; }
+            50%  { left: 130px; top: 60px; }
+            75%  { left: 180px; top: 28px; }
+            100% { left: 200px; top: 50px; }
+        }
+
+        .float-card.hand-mock {
+            bottom: 22%; right: 8%;
+            width: 110px; height: 110px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem;
+            animation: floatCardIn 1s ease 2.3s forwards, handFloatBob 5s ease-in-out 2.3s infinite;
+            border-color: rgba(0, 255, 204, 0.25);
+            background: radial-gradient(circle, rgba(0, 255, 204, 0.1), rgba(20,25,38,0.7));
+        }
+        @keyframes handFloatBob {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50%      { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        .scroll-indicator {
+            position: absolute; bottom: 1.5rem; left: 50%;
+            transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+            opacity: 0;
+            animation: heroFadeIn 1s ease 2s forwards;
+        }
+        .scroll-text {
+            font-size: 0.75rem; color: var(--muted);
+            letter-spacing: 2.5px;
+        }
+        .scroll-line {
+            width: 1px; height: 50px;
+            background: linear-gradient(to bottom, var(--accent), transparent);
+            position: relative; overflow: hidden;
+        }
+        .scroll-line::after {
+            content: '';
+            position: absolute; top: -10px; left: 0;
+            width: 1px; height: 10px;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            animation: scrollDot 1.6s ease-in-out infinite;
+        }
+        @keyframes scrollDot {
+            0%   { top: -10px; }
+            100% { top: 50px; }
+        }
+
+        /* ===== MARQUEE ===== */
+        .marquee {
+            padding: 1.5rem 0;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: linear-gradient(90deg, rgba(93,220,255,0.04), rgba(192,132,252,0.04));
+            overflow: hidden;
+            position: relative;
+            margin: 4rem 0;
+        }
+        .marquee-track {
+            display: flex;
+            gap: 3rem;
+            white-space: nowrap;
+            animation: marqueeScroll 28s linear infinite;
+            width: max-content;
+        }
+        @keyframes marqueeScroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .marquee-item {
+            display: inline-flex; align-items: center; gap: 12px;
+            font-size: 1.4rem; font-weight: 700;
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 1px;
+        }
+        .marquee-item .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent);
+        }
+        .marquee-item.purple .dot { background: var(--accent-2); box-shadow: 0 0 12px var(--accent-2); }
+        .marquee-item.green  .dot { background: var(--accent-3); box-shadow: 0 0 12px var(--accent-3); }
+
+        /* ===== SECTION GENERIC ===== */
+        .section-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+            position: relative;
+        }
+        .section-eyebrow {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(93, 220, 255, 0.08);
+            border: 1px solid rgba(93, 220, 255, 0.2);
+            border-radius: 999px;
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .section-title-big {
+            font-size: clamp(2rem, 4.5vw, 3.4rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #ffffff 30%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .section-lead {
+            color: var(--muted);
+            max-width: 640px;
+            font-size: 1.05rem;
+        }
+        .section-head { text-align: center; margin-bottom: 4rem; }
+        .section-head .section-lead { margin: 0 auto; }
+
+        /* ===== FEATURES GRID ===== */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+        .feature-card {
+            position: relative;
+            padding: 2rem;
+            background: linear-gradient(160deg, rgba(20, 22, 32, 0.85), rgba(14, 16, 24, 0.85));
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 22px;
+            transition: transform 0.4s var(--ease-snap), border-color 0.3s;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        .feature-card.visible {
             opacity: 1;
             transform: translateY(0);
+            transition: opacity 0.7s ease, transform 0.7s var(--ease-snap), border-color 0.3s;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: var(--mx, 50%); left: var(--my, 50%);
+            width: 360px; height: 360px;
+            background: radial-gradient(circle, rgba(93,220,255,0.15), transparent 60%);
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .feature-card:hover { border-color: rgba(93, 220, 255, 0.3); }
+        .feature-card:hover::before { opacity: 1; }
+
+        .feature-icon {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, rgba(93,220,255,0.2), rgba(192,132,252,0.15));
+            border: 1px solid rgba(93,220,255,0.3);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.7rem;
+            margin-bottom: 1.2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-icon::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        .feature-card:hover .feature-icon::after { transform: translateX(100%); }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+            color: var(--text);
+        }
+        .feature-text {
+            color: var(--muted);
+            font-size: 0.95rem;
         }
 
-        /* ===== GESTURES DEMO SECTION ===== */
+        /* ===== WORKFLOW STEPS ===== */
+        .workflow {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .workflow-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-top: 3rem;
+            position: relative;
+        }
+        .workflow-step {
+            position: relative;
+            padding: 2rem 1.5rem;
+            background: linear-gradient(160deg, rgba(22, 26, 38, 0.7), rgba(14, 16, 24, 0.7));
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 22px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s ease, transform 0.7s var(--ease-snap);
+        }
+        .workflow-step.visible { opacity: 1; transform: translateY(0); }
+        .workflow-step:nth-child(2) { transition-delay: 0.15s; }
+        .workflow-step:nth-child(3) { transition-delay: 0.3s; }
+        .workflow-step:nth-child(4) { transition-delay: 0.45s; }
+        .workflow-step:hover { border-color: rgba(93, 220, 255, 0.4); }
+
+        .step-number {
+            display: inline-block;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: var(--bg);
+            font-size: 1.15rem; font-weight: 800;
+            line-height: 44px;
+            margin-bottom: 1rem;
+            box-shadow: 0 0 24px rgba(93, 220, 255, 0.3);
+        }
+        .step-icon {
+            font-size: 2rem;
+            margin-bottom: 0.7rem;
+            animation: stepIconPulse 2.5s ease-in-out infinite;
+        }
+        @keyframes stepIconPulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.12); }
+        }
+        .step-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+        }
+        .step-text {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        /* ===== GESTURES ===== */
         .gestures-demo {
-            padding: 6rem 2rem;
+            padding: 4rem 2rem;
             max-width: 1400px;
             margin: 0 auto;
         }
-
-        .section-subtitle {
-            text-align: center;
-            color: var(--muted);
-            margin-top: 0.5rem;
-            font-size: 1rem;
-        }
-
         .gestures-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 2rem;
-            max-width: 1200px;
             margin: 3rem auto 0;
         }
-
         .gesture-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 2rem 1.5rem;
-            opacity: 0;
-            transform: translateY(50px);
-            transition: var(--transition);
+            background: linear-gradient(160deg, rgba(22, 26, 38, 0.7), rgba(14, 16, 24, 0.7));
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px;
+            padding: 1.5rem;
+            transition: transform 0.5s var(--ease-snap), border-color 0.3s, box-shadow 0.4s;
             position: relative;
             overflow: hidden;
-        }
-
-        .gesture-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--accent);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .gesture-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(93, 220, 255, 0.05), transparent);
             opacity: 0;
-            transition: var(--transition);
+            transform: translateY(40px);
         }
-
-        .gesture-card:hover::before {
-            opacity: 1;
+        .gesture-card.visible { opacity: 1; transform: translateY(0); }
+        .gesture-card:hover {
+            border-color: rgba(93, 220, 255, 0.35);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 30px rgba(93, 220, 255, 0.15);
+            transform: translateY(-8px);
         }
 
         .gesture-window {
-            background: var(--panel-light);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(93, 220, 255, 0.1);
-            min-height: 200px;
+            background: rgba(11, 13, 22, 0.6);
+            border-radius: 18px;
+            margin-bottom: 1.25rem;
+            border: 1px solid rgba(93,220,255,0.08);
+            height: 200px;
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(10px);
         }
-
         .gesture-label {
             position: absolute;
             bottom: 12px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(135deg, var(--accent), #00ffcc);
+            background: linear-gradient(135deg, var(--accent), var(--accent-3));
             color: var(--bg);
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.72rem;
             font-weight: 700;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(93, 220, 255, 0.3);
+            letter-spacing: 1.2px;
+            box-shadow: 0 4px 18px rgba(93, 220, 255, 0.4);
+            z-index: 5;
+            white-space: nowrap;
         }
+        .gesture-description { text-align: center; }
+        .gesture-description h4 { color: var(--text); font-size: 1.1rem; margin-bottom: 0.4rem; }
+        .gesture-description p { color: var(--muted); font-size: 0.9rem; }
 
-        .gesture-description {
-            text-align: center;
-            position: relative;
-            z-index: 1;
-        }
-
-        .gesture-description h4 {
-            color: var(--text);
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .gesture-description p {
-            color: var(--muted);
-            font-size: 0.9rem;
-        }
-
-        /* Gesture Animations */
-        .gesture-animation {
-            height: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        /* Pinch Animation */
-        .gesture-pinch {
-            flex-direction: column;
-        }
-
-        .hand-container {
-            font-size: 4rem;
-            position: relative;
-            animation: pinchMotion 2s ease-in-out infinite;
-        }
-
-        @keyframes pinchMotion {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(0.85); }
-        }
-
-        .finger-emoji, .thumb-emoji {
-            position: absolute;
-            font-size: 2.5rem;
-        }
-
-        .finger-emoji { top: 0; left: -10px; }
-        .thumb-emoji { bottom: 0; right: -10px; animation: thumbMove 2s ease-in-out infinite; }
-
-        @keyframes thumbMove {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(-20px); }
-        }
-
-        .pinch-dot {
-            width: 16px;
-            height: 16px;
-            background: var(--accent);
-            border-radius: 50%;
-            margin-top: -10px;
-            animation: dotPulse 2s ease-in-out infinite;
-            box-shadow: 0 0 20px var(--accent);
-        }
-
-        @keyframes dotPulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.5); opacity: 1; }
-        }
-
-        .draw-line-svg {
-            position: absolute;
-            bottom: 30px;
-            width: 180px;
-            height: 50px;
-        }
-
-        .animated-line {
-            stroke: var(--accent);
-            stroke-width: 3;
-            stroke-linecap: round;
-            fill: none;
-            stroke-dasharray: 200;
-            stroke-dashoffset: 200;
-            animation: drawLineAnim 2.5s ease-in-out infinite;
-        }
-
-        @keyframes drawLineAnim {
-            0% { stroke-dashoffset: 200; opacity: 0.3; }
-            20% { opacity: 1; }
-            80% { stroke-dashoffset: 0; opacity: 1; }
-            100% { stroke-dashoffset: 0; opacity: 0.3; }
-        }
-
-        /* Move Animation */
-        .gesture-move {
-            position: relative;
-        }
-
-        .open-hand {
-            font-size: 4rem;
-            animation: handMove 3s ease-in-out infinite;
-        }
-
-        @keyframes handMove {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(30px, -20px) rotate(10deg); }
-            50% { transform: translate(-20px, -30px) rotate(-5deg); }
-            75% { transform: translate(25px, -15px) rotate(8deg); }
-        }
-
-        .cursor-track {
+        .gesture-stage {
             position: absolute;
             inset: 0;
+        }
+        .gesture-stage svg {
+            width: 100%; height: 100%;
+            display: block;
+            overflow: visible;
+        }
+
+        /* === Card 1: pinch draws — cursor follows curve, leaving glowing trail === */
+        .g1-bg-grid {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(93,220,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(93,220,255,0.04) 1px, transparent 1px);
+            background-size: 22px 22px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+        }
+        .g1-trail {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 320;
+            stroke-dashoffset: 320;
+            filter: drop-shadow(0 0 6px var(--accent));
+            animation: g1Trail 4s cubic-bezier(0.4,0,0.6,1) infinite;
+        }
+        @keyframes g1Trail {
+            0%   { stroke-dashoffset: 320; opacity: 0; }
+            8%   { stroke-dashoffset: 320; opacity: 0.4; }
+            18%  { stroke-dashoffset: 290; opacity: 1; }
+            85%  { stroke-dashoffset: 0;   opacity: 1; }
+            95%  { stroke-dashoffset: 0;   opacity: 0.4; }
+            100% { stroke-dashoffset: 0;   opacity: 0; }
+        }
+        .g1-cursor {
+            position: absolute;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, var(--accent) 70%);
+            box-shadow: 0 0 18px var(--accent), 0 0 4px #fff inset;
+            offset-path: path('M 30 110 Q 90 30 150 80 T 250 50');
+            offset-distance: 0%;
+            top: 0; left: 0;
+            margin-top: -11px; margin-left: -11px;
+            animation: g1Cursor 4s cubic-bezier(0.4,0,0.6,1) infinite;
+        }
+        @keyframes g1Cursor {
+            0%   { offset-distance: 0%;   transform: scale(1.15); opacity: 0; }
+            8%   { offset-distance: 0%;   transform: scale(1.15); opacity: 1; }
+            14%  { offset-distance: 0%;   transform: scale(0.7);  opacity: 1; }
+            85%  { offset-distance: 100%; transform: scale(0.75); opacity: 1; }
+            95%  { offset-distance: 100%; transform: scale(1.4);  opacity: 0.5; }
+            100% { offset-distance: 100%; transform: scale(1.4);  opacity: 0; }
+        }
+        .g1-pinch-meta {
+            position: absolute;
+            top: 12px; left: 14px;
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.7rem;
+            color: var(--accent);
+            letter-spacing: 1px;
+            opacity: 0.7;
+            font-weight: 600;
+        }
+        .g1-pinch-meta::before {
+            content: '';
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            animation: g1PinchPulse 4s ease-in-out infinite;
+        }
+        @keyframes g1PinchPulse {
+            0%, 5%   { opacity: 0.3; }
+            14%, 85% { opacity: 1; }
+            95%,100% { opacity: 0.3; }
+        }
+
+        /* === Card 2: open hand — finger position equals cursor === */
+        .g2-orbit {
+            fill: none;
+            stroke: rgba(93, 220, 255, 0.18);
+            stroke-width: 1;
+            stroke-dasharray: 4 6;
+        }
+        .g2-trail {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-dasharray: 30 130;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 4px var(--accent));
+            animation: g2Trail 5s linear infinite;
+        }
+        @keyframes g2Trail {
+            from { stroke-dashoffset: 0; }
+            to   { stroke-dashoffset: -160; }
+        }
+        .g2-cursor {
+            position: absolute;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+            box-shadow: 0 0 22px var(--accent);
+            offset-path: path('M 50 100 C 50 30, 230 30, 230 100 C 230 170, 50 170, 50 100 Z');
+            offset-distance: 0%;
+            top: 0; left: 0;
+            margin-top: -11px; margin-left: -11px;
+            animation: g2Cursor 5s linear infinite;
+        }
+        @keyframes g2Cursor {
+            from { offset-distance: 0%; }
+            to   { offset-distance: 100%; }
+        }
+        .g2-cursor::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 1.5px solid rgba(93, 220, 255, 0.6);
+            transform: translate(-50%, -50%);
+            animation: g2CursorRing 1.6s ease-out infinite;
+        }
+        @keyframes g2CursorRing {
+            0%   { transform: translate(-50%,-50%) scale(0.8); opacity: 0.9; }
+            100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0; }
+        }
+        .g2-hand-icon {
+            position: absolute;
+            top: 14px; right: 14px;
+            font-size: 1.2rem;
+            opacity: 0.75;
+            animation: g2HandWave 3s ease-in-out infinite;
+            transform-origin: bottom center;
+        }
+        @keyframes g2HandWave {
+            0%, 100% { transform: rotate(-8deg); }
+            50%      { transform: rotate(8deg); }
+        }
+
+        /* === Card 3: hold zone — cursor enters, ring fills, panels slide in === */
+        .g3-zone {
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 64%; height: 36px;
+            background: linear-gradient(180deg, rgba(93,220,255,0.18), rgba(93,220,255,0.04));
+            border: 1px solid rgba(93,220,255,0.4);
+            border-top: none;
+            border-radius: 0 0 22px 22px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; letter-spacing: 1.5px;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-weight: 600;
+            animation: g3ZonePulse 4s ease-in-out infinite;
+        }
+        @keyframes g3ZonePulse {
+            0%, 30%, 100% {
+                background: linear-gradient(180deg, rgba(93,220,255,0.18), rgba(93,220,255,0.04));
+                border-color: rgba(93,220,255,0.4);
+            }
+            45%, 70% {
+                background: linear-gradient(180deg, rgba(93,220,255,0.45), rgba(93,220,255,0.18));
+                border-color: rgba(93,220,255,0.85);
+                box-shadow: 0 0 22px rgba(93,220,255,0.4);
+            }
+        }
+        .g3-cursor {
+            position: absolute;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+            box-shadow: 0 0 18px var(--accent);
+            top: 0; left: 0;
+            margin-top: -11px; margin-left: -11px;
+            animation: g3CursorPath 4s cubic-bezier(0.5,0,0.5,1) infinite;
+        }
+        @keyframes g3CursorPath {
+            0%, 5%    { top: 165px; left: 50%; }
+            32%       { top: 40px;  left: 50%; }
+            72%       { top: 40px;  left: 50%; }
+            96%, 100% { top: 165px; left: 50%; }
+        }
+        .g3-ring {
+            position: absolute;
+            top: 14px; left: 50%;
+            width: 56px; height: 56px;
+            margin-left: -28px;
+            opacity: 0;
+            animation: g3RingShow 4s ease-in-out infinite;
             pointer-events: none;
         }
-
-        .cursor-dot {
+        @keyframes g3RingShow {
+            0%, 32% { opacity: 0; }
+            38%     { opacity: 1; }
+            72%     { opacity: 1; }
+            82%     { opacity: 0; }
+            100%    { opacity: 0; }
+        }
+        .g3-ring svg { width: 100%; height: 100%; overflow: visible; }
+        .g3-ring .track { fill: none; stroke: rgba(255,255,255,0.12); stroke-width: 4; }
+        .g3-ring .prog  {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 152;
+            stroke-dashoffset: 152;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            filter: drop-shadow(0 0 6px var(--accent));
+            animation: g3RingFill 4s ease-in-out infinite;
+        }
+        @keyframes g3RingFill {
+            0%, 32% { stroke-dashoffset: 152; }
+            72%     { stroke-dashoffset: 0; }
+            100%    { stroke-dashoffset: 0; }
+        }
+        .g3-panel {
             position: absolute;
-            width: 14px;
-            height: 14px;
-            background: #ff6b6b;
+            top: 70px;
+            width: 36px; height: 70px;
+            border-radius: 8px;
+            background: rgba(93,220,255,0.14);
+            border: 1px solid rgba(93,220,255,0.45);
+            box-shadow: 0 0 14px rgba(93,220,255,0.2);
+            opacity: 0;
+        }
+        .g3-panel::before {
+            content: '';
+            position: absolute;
+            top: 8px; left: 6px; right: 6px;
+            height: 4px;
+            background: rgba(93,220,255,0.4);
+            border-radius: 2px;
+            box-shadow: 0 8px 0 rgba(93,220,255,0.3), 0 16px 0 rgba(93,220,255,0.2);
+        }
+        .g3-panel.left  { left: 14px;  animation: g3PanelLeft  4s ease-in-out infinite; }
+        .g3-panel.right { right: 14px; animation: g3PanelRight 4s ease-in-out infinite; }
+        @keyframes g3PanelLeft {
+            0%, 70% { opacity: 0; transform: translateX(-32px); }
+            82%     { opacity: 1; transform: translateX(0); }
+            92%     { opacity: 1; transform: translateX(0); }
+            100%    { opacity: 0; transform: translateX(-32px); }
+        }
+        @keyframes g3PanelRight {
+            0%, 70% { opacity: 0; transform: translateX(32px); }
+            82%     { opacity: 1; transform: translateX(0); }
+            92%     { opacity: 1; transform: translateX(0); }
+            100%    { opacity: 0; transform: translateX(32px); }
+        }
+
+        /* === Card 4: pinch + drag rotates 3D cube — cube and cursor synced === */
+        .g4-stage-inner {
+            position: absolute;
+            inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            perspective: 700px;
+            gap: 18px;
+            padding-top: 4px;
+        }
+        .g4-cube {
+            width: 80px; height: 80px;
+            transform-style: preserve-3d;
+            position: relative;
+            animation: g4CubeRot 5s cubic-bezier(0.4,0,0.6,1) infinite;
+        }
+        .g4-cube .face {
+            position: absolute;
+            width: 80px; height: 80px;
+            border: 1.5px solid var(--accent-2);
+            background: rgba(192, 132, 252, 0.16);
+            box-shadow: 0 0 18px rgba(192, 132, 252, 0.25);
+            backdrop-filter: blur(2px);
+        }
+        .g4-cube .f1 { transform: translateZ(40px); }
+        .g4-cube .f2 { transform: rotateY(180deg) translateZ(40px); }
+        .g4-cube .f3 { transform: rotateY(90deg)  translateZ(40px); }
+        .g4-cube .f4 { transform: rotateY(-90deg) translateZ(40px); }
+        .g4-cube .f5 { transform: rotateX(90deg)  translateZ(40px); }
+        .g4-cube .f6 { transform: rotateX(-90deg) translateZ(40px); }
+        @keyframes g4CubeRot {
+            0%, 100% { transform: rotateX(18deg) rotateY(-50deg); }
+            50%      { transform: rotateX(18deg) rotateY(130deg); }
+        }
+        .g4-track {
+            position: relative;
+            width: 80%; height: 28px;
+            margin-bottom: 4px;
+        }
+        .g4-track::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(93,220,255,0.35), transparent);
+            transform: translateY(-50%);
+        }
+        .g4-track::after {
+            content: '↔';
+            position: absolute;
+            bottom: -16px; left: 50%;
+            transform: translateX(-50%);
+            color: rgba(93,220,255,0.5);
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+        }
+        .g4-cursor {
+            position: absolute;
+            top: 50%;
+            width: 22px; height: 22px;
             border-radius: 50%;
-            box-shadow: 0 0 15px #ff6b6b;
-            animation: cursorFollow 3s ease-in-out infinite;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+            box-shadow: 0 0 16px var(--accent);
+            transform: translate(-50%, -50%) scale(0.78);
+            animation: g4Cursor 5s cubic-bezier(0.4,0,0.6,1) infinite;
+        }
+        .g4-cursor::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 1.5px dashed rgba(93,220,255,0.6);
+            animation: g4CursorRing 2s linear infinite;
+        }
+        @keyframes g4Cursor {
+            0%, 100% { left: 12%; transform: translate(-50%, -50%) scale(0.78); }
+            50%      { left: 88%; transform: translate(-50%, -50%) scale(0.78); }
+        }
+        @keyframes g4CursorRing {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
         }
 
-        @keyframes cursorFollow {
-            0%, 100% { top: 40%; left: 30%; }
-            25% { top: 25%; left: 65%; }
-            50% { top: 55%; left: 40%; }
-            75% { top: 30%; left: 55%; }
+        /* ===== SHOWCASE ===== */
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .showcase-screen {
+            position: relative;
+            aspect-ratio: 16 / 10;
+            border-radius: 24px;
+            overflow: hidden;
+            background: linear-gradient(160deg, rgba(20, 22, 32, 0.9), rgba(11, 13, 22, 0.9));
+            border: 1px solid rgba(93, 220, 255, 0.18);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease, transform 0.8s var(--ease-snap);
+        }
+        .showcase-screen.visible { opacity: 1; transform: translateY(0); }
+
+        .screen-tag {
+            position: absolute;
+            top: 14px; left: 14px;
+            background: rgba(0,0,0,0.6);
+            color: var(--accent);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(93,220,255,0.3);
+            text-transform: uppercase;
+            z-index: 3;
+        }
+        .screen-tag.purple { color: var(--accent-2); border-color: rgba(192,132,252,0.4); }
+
+        .screen-2d {
+            background:
+                radial-gradient(ellipse at 20% 30%, rgba(93,220,255,0.1), transparent 60%),
+                linear-gradient(160deg, rgba(20, 22, 32, 0.9), rgba(11, 13, 22, 0.9));
+        }
+        .screen-2d-canvas {
+            position: absolute; inset: 0;
+        }
+        .screen-2d-canvas svg { width: 100%; height: 100%; }
+        .screen-2d-line {
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 600;
+            stroke-dashoffset: 600;
+            animation: showcaseLineDraw 6s ease-in-out infinite;
+        }
+        .screen-2d-line.l1 { stroke: #ff6b6b; stroke-width: 4; animation-delay: 0s; filter: drop-shadow(0 0 6px #ff6b6b); }
+        .screen-2d-line.l2 { stroke: var(--accent); stroke-width: 4; animation-delay: 1.5s; filter: drop-shadow(0 0 6px var(--accent)); }
+        .screen-2d-line.l3 { stroke: var(--accent-3); stroke-width: 3; animation-delay: 3s; filter: drop-shadow(0 0 6px var(--accent-3)); }
+        @keyframes showcaseLineDraw {
+            0%   { stroke-dashoffset: 600; opacity: 0; }
+            10%  { opacity: 1; }
+            70%  { stroke-dashoffset: 0; opacity: 1; }
+            85%  { opacity: 0.4; }
+            100% { stroke-dashoffset: -600; opacity: 0; }
+        }
+        .screen-cursor {
+            position: absolute;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+            box-shadow: 0 0 18px var(--accent);
+            animation: showcaseCursor 6s ease-in-out infinite;
+            z-index: 2;
+        }
+        @keyframes showcaseCursor {
+            0%   { left: 14%; top: 76%; }
+            25%  { left: 50%; top: 30%; }
+            50%  { left: 80%; top: 70%; }
+            75%  { left: 30%; top: 50%; }
+            100% { left: 14%; top: 76%; }
         }
 
-        /* Fist Animation */
-        .gesture-fist {
+        .screen-3d {
+            background:
+                radial-gradient(ellipse at 70% 30%, rgba(192,132,252,0.12), transparent 60%),
+                linear-gradient(160deg, rgba(20, 22, 32, 0.9), rgba(11, 13, 22, 0.9));
+            display: flex; align-items: center; justify-content: center;
+            perspective: 700px;
+        }
+        .screen-3d-stage {
+            transform-style: preserve-3d;
+            animation: showcase3dRotate 16s linear infinite;
             position: relative;
         }
-
-        .fist-hand {
-            font-size: 4rem;
-            animation: fistSqueeze 2s ease-in-out infinite;
+        @keyframes showcase3dRotate {
+            0%   { transform: rotateX(20deg) rotateY(0); }
+            100% { transform: rotateX(20deg) rotateY(360deg); }
         }
-
-        @keyframes fistSqueeze {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(0.9); }
-        }
-
-        .sliding-panel {
+        .obj-cube, .obj-sphere, .obj-pyramid {
             position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 50px;
-            height: 80px;
-            background: rgba(93, 220, 255, 0.15);
-            border: 2px solid var(--accent);
+            transform-style: preserve-3d;
+        }
+        .obj-cube {
+            width: 70px; height: 70px;
+            top: -110px; left: -35px;
+        }
+        .obj-cube .face {
+            position: absolute; width: 70px; height: 70px;
+            border: 1.5px solid var(--accent);
+            background: rgba(93, 220, 255, 0.12);
+            box-shadow: 0 0 15px rgba(93, 220, 255, 0.3);
+        }
+        .obj-cube .f1 { transform: translateZ(35px); }
+        .obj-cube .f2 { transform: rotateY(180deg) translateZ(35px); }
+        .obj-cube .f3 { transform: rotateY(90deg) translateZ(35px); }
+        .obj-cube .f4 { transform: rotateY(-90deg) translateZ(35px); }
+        .obj-cube .f5 { transform: rotateX(90deg) translateZ(35px); }
+        .obj-cube .f6 { transform: rotateX(-90deg) translateZ(35px); }
+        .obj-sphere {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent-2));
+            top: 10px; left: 60px;
+            box-shadow: 0 0 30px var(--accent-2);
+        }
+        .obj-pyramid {
+            top: -10px; left: -120px;
+            width: 0; height: 0;
+            border-left: 35px solid transparent;
+            border-right: 35px solid transparent;
+            border-bottom: 70px solid rgba(0, 255, 204, 0.5);
+            filter: drop-shadow(0 0 14px var(--accent-3));
+        }
+        .ground-grid {
+            position: absolute;
+            top: 70%; left: 50%;
+            transform: translate(-50%, 0) rotateX(60deg);
+            width: 80%; height: 60%;
+            background-image:
+                linear-gradient(rgba(93,220,255,0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(93,220,255,0.15) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.5;
+            pointer-events: none;
+            mask-image: radial-gradient(ellipse at center, black, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black, transparent 70%);
+        }
+
+        .screen-mode-pills {
+            position: absolute;
+            top: 14px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 6px;
+            z-index: 3;
+        }
+        .screen-mode-pills .p {
+            width: 30px; height: 18px;
+            border-radius: 6px;
+            border: 1px solid;
+        }
+        .screen-mode-pills .p1 { background: rgba(255,2,2,0.18);    border-color: rgba(255,2,2,0.5);  }
+        .screen-mode-pills .p2 { background: rgba(238,255,5,0.18);  border-color: rgba(238,255,5,0.5); }
+        .screen-mode-pills .p3 { background: rgba(0,255,33,0.25);   border-color: rgba(0,255,33,0.7); box-shadow: 0 0 12px rgba(0,255,33,0.5); }
+        .screen-mode-pills .p4 { background: rgba(75,120,255,0.18); border-color: rgba(75,120,255,0.5); }
+
+        /* ===== STATS COUNTER ===== */
+        .stats-section {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+        .stat-block {
+            padding: 2rem 1rem;
+            background: rgba(20, 25, 38, 0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 22px;
+            transition: var(--transition);
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .stat-block.visible {
+            opacity: 1; transform: translateY(0);
+            transition: opacity 0.7s ease, transform 0.7s var(--ease-snap), border-color 0.3s, background 0.3s;
+        }
+        .stat-block:hover {
+            border-color: rgba(93, 220, 255, 0.3);
+            background: rgba(20, 25, 38, 0.6);
+            transform: translateY(-4px);
+        }
+        .stat-num {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(135deg, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-num .suffix { color: var(--accent); -webkit-text-fill-color: var(--accent); }
+        .stat-caption {
+            color: var(--muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            margin-top: 0.6rem;
+            font-weight: 600;
+        }
+
+        /* ===== MODE SELECTION ===== */
+        .modes-wrap {
+            padding: 5rem 2rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .mode-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .mode-card {
+            position: relative;
+            border-radius: 28px;
+            overflow: hidden;
+            min-height: 420px;
+            display: flex; flex-direction: column;
+            background: linear-gradient(160deg, rgba(20, 22, 32, 0.9), rgba(11, 13, 22, 0.9));
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: transform 0.5s var(--ease-snap), border-color 0.4s, box-shadow 0.4s;
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        .mode-card.visible { opacity: 1; transform: translateY(0); }
+        .mode-card:hover {
+            transform: translateY(-12px);
+            border-color: rgba(93, 220, 255, 0.4);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 50px rgba(93, 220, 255, 0.15);
+        }
+        .mode-card.purple:hover {
+            border-color: rgba(192, 132, 252, 0.4);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 50px rgba(192, 132, 252, 0.18);
+        }
+
+        .mode-preview {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .mode-preview-2d {
+            background:
+                radial-gradient(ellipse at 30% 40%, rgba(93,220,255,0.12), transparent 60%),
+                linear-gradient(160deg, rgba(11, 13, 22, 0.9), rgba(20, 22, 32, 0.9));
+        }
+        .mode-preview-3d {
+            background:
+                radial-gradient(ellipse at 70% 50%, rgba(192,132,252,0.15), transparent 60%),
+                linear-gradient(160deg, rgba(11, 13, 22, 0.9), rgba(20, 22, 32, 0.9));
+        }
+        .mode-preview svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .mode-preview-2d-line {
+            fill: none; stroke: var(--accent); stroke-width: 3.5; stroke-linecap: round;
+            stroke-dasharray: 500; stroke-dashoffset: 500;
+            animation: modePreviewLine 5s ease-in-out infinite;
+            filter: drop-shadow(0 0 8px var(--accent));
+        }
+        @keyframes modePreviewLine {
+            0%   { stroke-dashoffset: 500; opacity: 0.2; }
+            45%  { stroke-dashoffset: 0; opacity: 1; }
+            85%  { opacity: 0.5; }
+            100% { stroke-dashoffset: -500; opacity: 0; }
+        }
+        .mode-preview-3d-cube {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px; height: 90px;
+            transform-style: preserve-3d;
+            animation: modePreviewCubeSpin 10s linear infinite;
+        }
+        .mode-preview-3d-cube .cube-face {
+            position: absolute; width: 90px; height: 90px;
+            border: 1.5px solid var(--accent-2);
+            background: rgba(192, 132, 252, 0.12);
+        }
+        .mpc1 { transform: translateZ(45px); }
+        .mpc2 { transform: rotateY(180deg) translateZ(45px); }
+        .mpc3 { transform: rotateY(90deg) translateZ(45px); }
+        .mpc4 { transform: rotateY(-90deg) translateZ(45px); }
+        .mpc5 { transform: rotateX(90deg) translateZ(45px); }
+        .mpc6 { transform: rotateX(-90deg) translateZ(45px); }
+        @keyframes modePreviewCubeSpin {
+            0%   { transform: translate(-50%, -50%) rotateX(0)    rotateY(0); }
+            100% { transform: translate(-50%, -50%) rotateX(360deg) rotateY(360deg); }
+        }
+
+        .mode-body {
+            padding: 2rem 1.8rem;
+            flex: 1;
+            display: flex; flex-direction: column;
+        }
+        .mode-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(93, 220, 255, 0.1);
+            color: var(--accent);
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 0.8rem;
+            align-self: flex-start;
+        }
+        .mode-card.purple .mode-tag {
+            background: rgba(192, 132, 252, 0.12);
+            color: var(--accent-2);
+        }
+        .mode-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 0.6rem;
+        }
+        .mode-desc {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            flex: 1;
+        }
+        .mode-features {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            margin-bottom: 1.5rem;
+        }
+        .mode-feature-pill {
+            font-size: 0.78rem;
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 999px;
+            color: var(--muted);
+        }
+        .mode-go-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 0.9rem 1.6rem;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--accent), #00b8d4);
+            color: var(--bg);
+            transition: var(--transition);
+            align-self: flex-start;
+            box-shadow: 0 8px 20px rgba(93, 220, 255, 0.3);
+        }
+        .mode-go-btn:hover {
+            transform: translateX(4px);
+            box-shadow: 0 14px 28px rgba(93, 220, 255, 0.45);
+        }
+        .mode-card.purple .mode-go-btn {
+            background: linear-gradient(135deg, var(--accent-2), #9333ea);
+            box-shadow: 0 8px 20px rgba(192, 132, 252, 0.3);
+        }
+        .mode-card.purple .mode-go-btn:hover { box-shadow: 0 14px 28px rgba(192, 132, 252, 0.45); }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            padding: 4rem 2rem 2rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 4rem;
+            background: linear-gradient(180deg, transparent, rgba(0,0,0,0.3));
+        }
+        .footer-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+        .footer-col h4 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+        .footer-col ul { list-style: none; }
+        .footer-col li { margin-bottom: 0.6rem; }
+        .footer-col a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+        .footer-col a:hover { color: var(--text); }
+        .footer-brand p {
+            color: var(--muted);
+            font-size: 0.95rem;
+            max-width: 320px;
+            margin-top: 0.8rem;
+        }
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+        @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+
+        /* ===== ONBOARDING MODAL ===== */
+        .onboarding-overlay {
+            position: fixed; inset: 0; z-index: 5000;
+            background: rgba(8, 10, 16, 0.78);
+            backdrop-filter: blur(14px) saturate(140%);
+            -webkit-backdrop-filter: blur(14px) saturate(140%);
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.35s ease, visibility 0.35s ease;
+        }
+        .onboarding-overlay.visible { opacity: 1; visibility: visible; }
+        .onboarding-modal {
+            background: linear-gradient(160deg, rgba(20, 25, 40, 0.97), rgba(14, 18, 30, 0.97));
+            border: 1px solid rgba(93, 220, 255, 0.25);
+            border-radius: 28px;
+            width: 100%; max-width: 680px; max-height: calc(100vh - 48px);
+            display: flex; flex-direction: column;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6),
+                        0 0 0 1px rgba(255, 255, 255, 0.03),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transform: translateY(20px) scale(0.97);
+            transition: transform 0.4s var(--ease-snap);
+            overflow: hidden; position: relative;
+        }
+        .onboarding-overlay.visible .onboarding-modal { transform: translateY(0) scale(1); }
+        .onboarding-close {
+            position: absolute; top: 16px; right: 16px;
+            width: 36px; height: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            color: var(--muted);
+            cursor: none;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; line-height: 1;
+            transition: var(--transition);
+            z-index: 2;
+        }
+        @media (max-width: 900px) { .onboarding-close { cursor: pointer; } }
+        .onboarding-close:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
+        .onboarding-content { padding: 48px 44px 28px; flex: 1; overflow-y: auto; min-height: 0; }
+        .onboarding-slide { display: none; opacity: 0; animation: slideFadeIn 0.45s ease forwards; }
+        .onboarding-slide.active { display: block; }
+        @keyframes slideFadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .onboarding-visual {
+            height: 220px; margin-bottom: 28px;
+            background: radial-gradient(ellipse at center, rgba(93, 220, 255, 0.08), transparent 70%);
+            border-radius: 20px;
+            border: 1px solid rgba(93, 220, 255, 0.12);
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .onboarding-title {
+            font-size: 1.65rem; font-weight: 700; margin-bottom: 12px;
+            background: linear-gradient(to right, #ffffff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .onboarding-text { color: var(--muted); font-size: 1rem; line-height: 1.65; margin-bottom: 8px; }
+        .onboarding-tip {
+            margin-top: 16px; padding: 12px 16px;
+            background: rgba(93, 220, 255, 0.07);
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            font-size: 0.9rem; color: var(--text);
+        }
+        .onboarding-cta-row { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+        .onboarding-cta {
+            flex: 1; min-width: 140px; padding: 14px 20px;
+            background: linear-gradient(135deg, var(--accent), #00b8d4);
+            color: var(--bg); text-decoration: none;
+            border-radius: 14px; font-weight: 600; text-align: center;
+            transition: var(--transition); border: none; font-size: 1rem;
+        }
+        .onboarding-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(93, 220, 255, 0.35); }
+        .onboarding-cta.secondary {
+            background: rgba(192, 132, 252, 0.18);
+            color: var(--accent-2);
+            border: 1px solid rgba(192, 132, 252, 0.4);
+        }
+        .onboarding-cta.secondary:hover {
+            background: rgba(192, 132, 252, 0.28);
+            box-shadow: 0 12px 28px rgba(192, 132, 252, 0.25);
+        }
+        .onboarding-footer {
+            padding: 18px 28px 22px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            background: rgba(0, 0, 0, 0.15);
+        }
+        .onboarding-progress { display: flex; gap: 8px; }
+        .progress-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            transition: var(--transition);
+            cursor: none;
+        }
+        @media (max-width: 900px) { .progress-dot { cursor: pointer; } }
+        .progress-dot.active { background: var(--accent); width: 24px; border-radius: 5px; box-shadow: 0 0 12px var(--accent); }
+        .progress-dot.done { background: rgba(93, 220, 255, 0.45); }
+        .onboarding-buttons { display: flex; gap: 10px; align-items: center; }
+        .onb-btn {
+            padding: 10px 22px;
             border-radius: 12px;
-            animation: panelSlide 2s ease-in-out infinite;
+            font-weight: 600; font-size: 0.95rem;
+            cursor: none;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--muted);
+            font-family: inherit;
         }
+        @media (max-width: 900px) { .onb-btn { cursor: pointer; } }
+        .onb-btn:hover { color: var(--text); }
+        .onb-btn.primary { background: var(--accent); color: var(--bg); }
+        .onb-btn.primary:hover { background: #7be8ff; box-shadow: 0 8px 22px rgba(93, 220, 255, 0.4); transform: translateY(-1px); }
+        .onb-btn.ghost { border-color: rgba(255, 255, 255, 0.12); color: var(--text); }
+        .onb-btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+        .onb-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-        @keyframes panelSlide {
-            0%, 100% { transform: translateY(-50%) translateX(-60px); opacity: 0.2; }
-            50% { transform: translateY(-50%) translateX(0); opacity: 1; }
+        /* Floating help button */
+        .help-fab {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            width: 54px; height: 54px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #00b8d4);
+            color: var(--bg);
+            border: none;
+            font-size: 24px; font-weight: 700;
+            cursor: none;
+            z-index: 1500;
+            box-shadow: 0 12px 28px rgba(93, 220, 255, 0.35);
+            transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
+            animation: helpFabPulse 3s ease-in-out infinite;
         }
+        @media (max-width: 900px) { .help-fab { cursor: pointer; } }
+        @keyframes helpFabPulse {
+            0%, 100% { box-shadow: 0 12px 28px rgba(93, 220, 255, 0.35); }
+            50%      { box-shadow: 0 12px 36px rgba(93, 220, 255, 0.7), 0 0 0 6px rgba(93, 220, 255, 0.15); }
+        }
+        .help-fab:hover { transform: translateY(-3px) scale(1.08); animation: none; box-shadow: 0 16px 36px rgba(93, 220, 255, 0.5); }
 
-        /* Rotate Animation */
-        .gesture-rotate {
+        /* Onboarding visuals (kept) */
+        .visual-welcome { font-size: 5rem; animation: handWave 2.5s ease-in-out infinite; }
+        @keyframes handWave {
+            0%, 100% { transform: rotate(0deg); }
+            10%, 30% { transform: rotate(-18deg); }
+            20%, 40% { transform: rotate(18deg); }
+            50%, 90% { transform: rotate(0deg); }
+        }
+        .visual-welcome-spark {
+            position: absolute; font-size: 1.4rem; opacity: 0.7;
+            animation: sparkFloat 3s ease-in-out infinite;
+        }
+        .visual-welcome-spark.s1 { top: 20%; left: 22%; animation-delay: 0s; }
+        .visual-welcome-spark.s2 { top: 30%; right: 26%; animation-delay: 0.6s; }
+        .visual-welcome-spark.s3 { bottom: 22%; left: 28%; animation-delay: 1.2s; }
+        .visual-welcome-spark.s4 { bottom: 30%; right: 22%; animation-delay: 1.8s; }
+        @keyframes sparkFloat {
+            0%, 100% { transform: translateY(0) scale(0.85); opacity: 0.5; }
+            50% { transform: translateY(-12px) scale(1.1); opacity: 1; }
+        }
+        .visual-pinch-stage { position: relative; width: 280px; height: 180px; display: flex; align-items: center; justify-content: center; }
+        .pinch-hand-emoji {
+            font-size: 4.5rem;
+            animation: pinchScale 2.2s ease-in-out infinite;
+            filter: drop-shadow(0 0 16px rgba(93, 220, 255, 0.4));
+        }
+        @keyframes pinchScale { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.9); } }
+        .pinch-pulse-dot {
+            position: absolute;
+            width: 22px; height: 22px;
+            background: var(--accent); border-radius: 50%;
+            animation: pinchDotPulse 2.2s ease-in-out infinite;
+            box-shadow: 0 0 22px var(--accent);
+        }
+        @keyframes pinchDotPulse {
+            0%, 100% { transform: scale(0.5); opacity: 0; }
+            50%      { transform: scale(1.3); opacity: 1; }
+        }
+        .pinch-line-svg { position: absolute; bottom: 22px; width: 220px; height: 60px; }
+        .pinch-line-path {
+            fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round;
+            stroke-dasharray: 260; stroke-dashoffset: 260;
+            animation: pinchLineDraw 2.8s ease-in-out infinite;
+            filter: drop-shadow(0 0 6px rgba(93, 220, 255, 0.6));
+        }
+        @keyframes pinchLineDraw {
+            0%   { stroke-dashoffset: 260; opacity: 0.2; }
+            25%  { opacity: 1; }
+            70%  { stroke-dashoffset: 0; opacity: 1; }
+            100% { stroke-dashoffset: 0; opacity: 0.2; }
+        }
+        .visual-hold-stage { position: relative; width: 320px; height: 200px; }
+        .hold-zone-rect {
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 220px; height: 50px;
+            background: linear-gradient(135deg, rgba(93, 220, 255, 0.15), rgba(93, 220, 255, 0.05));
+            border: 1px solid rgba(93, 220, 255, 0.4);
+            border-top: none;
+            border-radius: 0 0 28px 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            color: var(--accent);
+            text-transform: uppercase;
+            animation: holdZonePulse 3s ease-in-out infinite;
+        }
+        @keyframes holdZonePulse {
+            0%, 60%, 100% { background: linear-gradient(135deg, rgba(93, 220, 255, 0.15), rgba(93, 220, 255, 0.05)); }
+            30%           { background: linear-gradient(135deg, rgba(93, 220, 255, 0.35), rgba(93, 220, 255, 0.15)); }
+        }
+        .hold-cursor {
+            position: absolute;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+            box-shadow: 0 0 18px var(--accent);
+            animation: holdCursorPath 3s ease-in-out infinite;
+            top: 130px; left: 40px;
+        }
+        @keyframes holdCursorPath {
+            0%   { top: 130px; left: 40px; }
+            40%  { top: 25px;  left: 50%; transform: translateX(-50%); }
+            70%  { top: 25px;  left: 50%; transform: translateX(-50%); }
+            100% { top: 130px; left: 40px; }
+        }
+        .hold-ring-svg {
+            position: absolute;
+            width: 60px; height: 60px;
+            top: 6px; left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            animation: holdRingShow 3s ease-in-out infinite;
+        }
+        @keyframes holdRingShow {
+            0%, 30% { opacity: 0; }
+            45%     { opacity: 1; }
+            70%     { opacity: 1; }
+            85%     { opacity: 0; }
+            100%    { opacity: 0; }
+        }
+        .hold-ring-track { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 4; }
+        .hold-ring-prog  {
+            fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round;
+            stroke-dasharray: 160; stroke-dashoffset: 160;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            animation: holdRingFill 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 8px var(--accent));
+        }
+        @keyframes holdRingFill {
+            0%, 30% { stroke-dashoffset: 160; }
+            70%     { stroke-dashoffset: 0; }
+            100%    { stroke-dashoffset: 0; }
+        }
+        .hold-panels {
+            position: absolute; top: 80px;
+            width: 50px; height: 80px;
+            border-radius: 12px;
+            background: rgba(93, 220, 255, 0.12);
+            border: 1px solid rgba(93, 220, 255, 0.4);
+            opacity: 0;
+        }
+        .hold-panels.left  { left: 18px;  animation: holdPanelLeft 3s ease-in-out infinite; }
+        .hold-panels.right { right: 18px; animation: holdPanelRight 3s ease-in-out infinite; }
+        @keyframes holdPanelLeft {
+            0%, 70%  { opacity: 0; transform: translateX(-30px); }
+            85%      { opacity: 1; transform: translateX(0); }
+            100%     { opacity: 0; transform: translateX(-30px); }
+        }
+        @keyframes holdPanelRight {
+            0%, 70%  { opacity: 0; transform: translateX(30px); }
+            85%      { opacity: 1; transform: translateX(0); }
+            100%     { opacity: 0; transform: translateX(30px); }
+        }
+        .visual-modes-stage {
+            position: relative;
+            width: 320px; height: 200px;
+            display: flex; align-items: flex-start; justify-content: center;
+            padding-top: 30px; gap: 8px;
+        }
+        .mode-mini {
+            width: 60px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            border: 2px solid;
             position: relative;
         }
-
-        .two-fingers {
-            font-size: 4rem;
-            animation: fingersRotate 2s ease-in-out infinite;
-        }
-
-        @keyframes fingersRotate {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-20deg); }
-            75% { transform: rotate(20deg); }
-        }
-
-        .rotating-object {
+        .mode-mini.m1 { background: rgba(255,2,2,0.18);    border-color: rgba(255,2,2,0.5);    color: #ff5b5b; }
+        .mode-mini.m2 { background: rgba(238,255,5,0.18);  border-color: rgba(238,255,5,0.5);  color: #f5ff66; }
+        .mode-mini.m3 { background: rgba(0,255,33,0.18);   border-color: rgba(0,255,33,0.5);  color: #5cff7d; }
+        .mode-mini.m4 { background: rgba(75,120,255,0.18); border-color: rgba(75,120,255,0.5); color: #8aa4ff; }
+        .mode-cursor {
             position: absolute;
-            right: 40px;
-            top: 50%;
-            transform: translateY(-50%);
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+            box-shadow: 0 0 18px var(--accent);
+            top: 35px;
+            animation: modesCursorMove 5s ease-in-out infinite;
+        }
+        @keyframes modesCursorMove {
+            0%, 100% { left: 60px; }
+            25%      { left: 130px; }
+            50%      { left: 200px; }
+            75%      { left: 270px; }
+        }
+        .modes-hint {
+            position: absolute;
+            bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.78rem;
+            color: var(--muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .visual-ready-stage {
+            position: relative;
+            width: 240px; height: 180px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .ready-checkmark {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem;
+            color: var(--bg);
+            box-shadow: 0 0 40px rgba(93, 220, 255, 0.5);
+            animation: readyPop 1.2s ease-out;
+        }
+        @keyframes readyPop {
+            0%   { transform: scale(0); opacity: 0; }
+            60%  { transform: scale(1.18); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .ready-confetti {
+            position: absolute;
+            font-size: 1.3rem;
+            animation: readyConfetti 2.4s ease-in-out infinite;
+        }
+        .ready-confetti.c1 { top: 12%;  left: 12%; animation-delay: 0s; }
+        .ready-confetti.c2 { top: 20%;  right: 12%; animation-delay: 0.4s; }
+        .ready-confetti.c3 { bottom: 18%; left: 18%; animation-delay: 0.8s; }
+        .ready-confetti.c4 { bottom: 12%; right: 16%; animation-delay: 1.2s; }
+        @keyframes readyConfetti {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+            50%      { transform: translateY(-14px) rotate(180deg); opacity: 1; }
         }
 
-        .cube-3d {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #c084fc, #9333ea);
-            border-radius: 10px;
-            animation: cubeSpin 2s linear infinite;
-            box-shadow: 0 0 25px rgba(192, 132, 252, 0.5);
-        }
-
-        @keyframes cubeSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .gestures-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .gesture-card {
-                max-width: 350px;
-                margin: 0 auto;
-            }
+            .navbar { padding: 0.75rem 1rem; }
+            .nav-links { display: none; }
+            .hero { padding: 5rem 1rem 2rem; }
+            .float-card.tools-mock,
+            .float-card.cube-mock,
+            .float-card.draw-mock,
+            .float-card.hand-mock { display: none; }
+            .section-wrap { padding: 4rem 1rem; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+            .hero-stats { gap: 1.5rem; }
+        }
+
+        @media (max-width: 600px) {
+            .onboarding-modal { border-radius: 22px; }
+            .onboarding-content { padding: 38px 22px 18px; }
+            .onboarding-footer { padding: 14px 18px 18px; flex-direction: column; align-items: stretch; }
+            .onboarding-buttons { justify-content: space-between; }
+            .onboarding-visual { height: 180px; }
+            .onboarding-title { font-size: 1.3rem; }
+            .help-fab { bottom: 18px; right: 18px; width: 48px; height: 48px; font-size: 22px; }
+            .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
         }
     </style>
 </head>
 <body>
+    <!-- Custom cursor -->
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+
+    <!-- Scroll progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
     <!-- Liquid Glass Background -->
     <div id="liquid-glass-bg">
         <div class="light-source"></div>
@@ -928,561 +1947,1032 @@
     <div id="particles"></div>
 
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="logo">
             <div class="logo-icon"></div>
             <span class="logo-text">Draw AR</span>
         </div>
         <div class="nav-links">
+            <a href="#features" class="nav-link">Возможности</a>
+            <a href="#workflow" class="nav-link">Как работает</a>
             <a href="#gestures" class="nav-link">Жесты</a>
-            <a href="#guides" class="nav-link">Гайды</a>
             <a href="#modes" class="nav-link">Режимы</a>
         </div>
+        <a href="#modes" class="nav-cta">Начать →</a>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- HERO -->
     <section class="hero">
-        <h1 class="hero-title">Рисуй жестами в AR</h1>
-        <p class="hero-subtitle">
-            Инновационный инструмент для рисования в 2D и 3D пространстве с помощью жестов. 
-            Используйте вашу камеру для создания искусства с помощью жестов рук.
-        </p>
+        <div class="hero-floats">
+            <div class="float-card tools-mock" data-parallax="0.5">
+                <div class="mock-row"><div class="mock-pill active"></div><div class="mock-pill"></div></div>
+                <div class="mock-row"><div class="mock-pill"></div><div class="mock-pill"></div></div>
+                <div class="mock-swatch-row">
+                    <div class="mock-sw s1"></div>
+                    <div class="mock-sw s2"></div>
+                    <div class="mock-sw s3"></div>
+                    <div class="mock-sw s4"></div>
+                    <div class="mock-sw s5"></div>
+                </div>
+            </div>
+
+            <div class="float-card cube-mock" data-parallax="0.7">
+                <div class="cube-3d-wrap">
+                    <div class="cube-face front"></div>
+                    <div class="cube-face back"></div>
+                    <div class="cube-face right"></div>
+                    <div class="cube-face left"></div>
+                    <div class="cube-face top"></div>
+                    <div class="cube-face bottom"></div>
+                </div>
+            </div>
+
+            <div class="float-card draw-mock" data-parallax="0.4">
+                <svg viewBox="0 0 200 100" preserveAspectRatio="none">
+                    <path class="draw-mock-line" d="M 10 70 Q 50 20 90 50 T 170 30 T 195 50"/>
+                </svg>
+                <div class="draw-mock-cursor"></div>
+            </div>
+
+            <div class="float-card hand-mock" data-parallax="0.6">🤏</div>
+        </div>
+
+        <div class="hero-content">
+            <span class="hero-badge">⚡ Powered by MediaPipe Hand Tracking</span>
+            <h1 class="hero-title">
+                <span class="word">Рисуй</span>
+                <span class="word gradient">жестами</span>
+                <span class="word">в</span>
+                <span class="word">AR</span>
+                <span class="word">✦</span>
+            </h1>
+            <p class="hero-subtitle">
+                Управляй кистью и 3D-объектами движениями руки. Без планшетов, мышей и установки — только камера и твои пальцы. Прямо в браузере.
+            </p>
+            <div class="hero-cta-row">
+                <a href="2D.html" class="btn-primary magnetic">✏️ Начать в 2D</a>
+                <a href="3D.html" class="btn-secondary magnetic">🔮 Открыть 3D</a>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat-item">
+                    <div class="hero-stat-num">21</div>
+                    <div class="hero-stat-label">Точек руки</div>
+                </div>
+                <div class="hero-stat-item">
+                    <div class="hero-stat-num">60 fps</div>
+                    <div class="hero-stat-label">Реальное время</div>
+                </div>
+                <div class="hero-stat-item">
+                    <div class="hero-stat-num">0 МБ</div>
+                    <div class="hero-stat-label">Установки</div>
+                </div>
+                <div class="hero-stat-item">
+                    <div class="hero-stat-num">2D + 3D</div>
+                    <div class="hero-stat-label">В одном</div>
+                </div>
+            </div>
+        </div>
+
         <div class="scroll-indicator">
             <span class="scroll-text">ПРОКРУТИТЕ</span>
             <div class="scroll-line"></div>
         </div>
     </section>
 
-    <!-- Guides Section -->
-    <section class="guides" id="guides">
-        <h2 class="section-title fade-in">Как это работает</h2>
-        <div class="guides-grid">
-            <!-- 2D Guide Card -->
-            <div class="guide-card fade-in">
-                <div class="guide-icon">🎨</div>
-                <h3 class="guide-title">Режим 2D Рисования</h3>
-                <p style="color: var(--muted);">Рисуйте на плоскости с помощью жестов рук</p>
-                <ul class="guide-steps">
-                    <li class="guide-step">
-                        <span class="step-number">1</span>
-                        <span class="step-text">Разожмите руку для перемещения курсора</span>
-                    </li>
-                    <li class="guide-step">
-                        <span class="step-number">2</span>
-                        <span class="step-text">Сожмите большой и указательный палец для начала рисования</span>
-                    </li>
-                    <li class="guide-step">
-                        <span class="step-number">3</span>
-                        <span class="step-text">Выбирайте инструменты: кисть, фигуры, цвет и толщину</span>
-                    </li>
-                    <li class="guide-step">
-                        <span class="step-number">4</span>
-                        <span class="step-text">Используйте историю действий для отмены/повтора</span>
-                    </li>
-                    <li class="guide-step">
-                        <span class="step-number">5</span>
-                        <span class="step-text">Экспортируйте результат с фоном камеры или без</span>
-                    </li>
-                </ul>
-            </div>
+    <!-- MARQUEE -->
+    <div class="marquee">
+        <div class="marquee-track">
+            <span class="marquee-item">✦ Жесты <span class="dot"></span></span>
+            <span class="marquee-item purple">3D AR редактор <span class="dot"></span></span>
+            <span class="marquee-item green">2D рисование <span class="dot"></span></span>
+            <span class="marquee-item">Камера + ИИ <span class="dot"></span></span>
+            <span class="marquee-item purple">Ничего скачивать <span class="dot"></span></span>
+            <span class="marquee-item">Кисть · Фигуры · Цвета <span class="dot"></span></span>
+            <span class="marquee-item green">Работает в браузере <span class="dot"></span></span>
+            <span class="marquee-item">21 точка руки <span class="dot"></span></span>
+            <!-- duplicate for seamless loop -->
+            <span class="marquee-item">✦ Жесты <span class="dot"></span></span>
+            <span class="marquee-item purple">3D AR редактор <span class="dot"></span></span>
+            <span class="marquee-item green">2D рисование <span class="dot"></span></span>
+            <span class="marquee-item">Камера + ИИ <span class="dot"></span></span>
+            <span class="marquee-item purple">Ничего скачивать <span class="dot"></span></span>
+            <span class="marquee-item">Кисть · Фигуры · Цвета <span class="dot"></span></span>
+            <span class="marquee-item green">Работает в браузере <span class="dot"></span></span>
+            <span class="marquee-item">21 точка руки <span class="dot"></span></span>
+        </div>
+    </div>
 
-            <!-- 3D Guide Card -->
-            <div class="guide-card fade-in">
-                <div class="guide-icon">✨</div>
-                <h3 class="guide-title">Режим 3D AR</h3>
-                <p style="color: var(--muted);">Создавайте и управляйте 3D объектами в AR пространстве</p>
-                <ul class="guide-steps">
-                    <li class="guide-step">
-                        <span class="step-number">1</span>
-                        <span class="step-text">Добавляйте 3D фигуры: кубы, сферы, цилиндры, пирамиды</span>
-                    </li>
-                    <li class="guide-step">
-                        <span class="step-number">2</span>
-                        <span class="step-text">Выберите режим: перемещение, вращение или масштабирование</span>
-                    </li>
-                    <li class="guide-step">
-                        <span class="step-number">3</span>
-                        <span class="step-text">Сожмите пальцы для взаимодействия с выбранным объектом</span>
-                    </li>
-                    <li class="guide-step">
-                        <span class="step-number">4</span>
-                        <span class="step-text">Меняйте цвета объектов в реальном времени</span>
-                    </li>
-                    <li class="guide-step">
-                        <span class="step-number">5</span>
-                        <span class="step-text">Удаляйте или экспортируйте сцену с AR окружением</span>
-                    </li>
-                </ul>
+    <!-- FEATURES -->
+    <section class="section-wrap" id="features">
+        <div class="section-head">
+            <span class="section-eyebrow">Возможности</span>
+            <h2 class="section-title-big">Всё, что нужно для жестового творчества</h2>
+            <p class="section-lead">Полный набор инструментов в одной вкладке: распознавание рук, 2D-кисти, 3D-сцена, экспорт результатов.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card reveal">
+                <div class="feature-icon">📷</div>
+                <h3 class="feature-title">Камера = контроллер</h3>
+                <p class="feature-text">Веб-камера ловит положение 21 точки на кисти и передаёт их в редактор 60 раз в секунду.</p>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-icon">🤏</div>
+                <h3 class="feature-title">Один жест — много действий</h3>
+                <p class="feature-text">Щипком ты рисуешь, выбираешь, двигаешь, нажимаешь кнопки. Контекст определяет, что произойдёт.</p>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-icon">🎨</div>
+                <h3 class="feature-title">2D-инструменты</h3>
+                <p class="feature-text">Кисть, отрезки, прямоугольники, круги, треугольники, стрелки. Палитра, толщина, прозрачность.</p>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-icon">🧊</div>
+                <h3 class="feature-title">3D-сцена</h3>
+                <p class="feature-text">Куб, сфера, цилиндр, пирамида, 3D-кисть. Перемещай, вращай и масштабируй жестами.</p>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-icon">⚙️</div>
+                <h3 class="feature-title">Удержание-зоны</h3>
+                <p class="feature-text">Панели открываются по «удержанию в зоне». Не нужно искать кнопки — просто задержи руку.</p>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-icon">💾</div>
+                <h3 class="feature-title">Экспорт в PNG</h3>
+                <p class="feature-text">Сохраняй результат с прозрачным фоном, цветным фоном или с картинкой из камеры.</p>
             </div>
         </div>
+    </section>
 
-        <!-- Gestures Animation Section -->
-        <section class="gestures-demo" id="gestures">
-            <h2 class="section-title fade-in">Основные жесты</h2>
-            <p class="section-subtitle fade-in">Интерактивная демонстрация управляющих жестов</p>
-            
-            <div class="gestures-grid">
-                <!-- Gesture 1: Pinch to Draw -->
-                <div class="gesture-card fade-in">
-                    <div class="gesture-window">
-                        <div class="gesture-animation gesture-pinch">
-                            <div class="hand-container">
-                                <span class="finger-emoji">☝️</span>
-                                <span class="thumb-emoji">👍</span>
-                            </div>
-                            <div class="pinch-dot"></div>
-                            <svg class="draw-line-svg" viewBox="0 0 200 100">
-                                <path class="animated-line" d="M 20 60 Q 60 30 100 50 T 180 60" fill="none"/>
-                            </svg>
-                        </div>
-                        <div class="gesture-label">✌️ СЖАТИЕ</div>
+    <!-- WORKFLOW -->
+    <section class="workflow" id="workflow">
+        <div class="section-head">
+            <span class="section-eyebrow">Как это работает</span>
+            <h2 class="section-title-big">От нуля до творчества — 4 шага</h2>
+        </div>
+        <div class="workflow-steps">
+            <div class="workflow-step reveal">
+                <div class="step-number">1</div>
+                <div class="step-icon">📷</div>
+                <div class="step-title">Дай доступ к камере</div>
+                <div class="step-text">Камера работает только локально, видео никуда не уходит.</div>
+            </div>
+            <div class="workflow-step reveal">
+                <div class="step-number">2</div>
+                <div class="step-icon">🎯</div>
+                <div class="step-title">Выбери режим</div>
+                <div class="step-text">2D-холст для рисования или 3D-сцена для AR-объектов.</div>
+            </div>
+            <div class="workflow-step reveal">
+                <div class="step-number">3</div>
+                <div class="step-icon">🖐️</div>
+                <div class="step-title">Покажи руку</div>
+                <div class="step-text">Курсор последует за указательным пальцем — без задержки.</div>
+            </div>
+            <div class="workflow-step reveal">
+                <div class="step-number">4</div>
+                <div class="step-icon">✨</div>
+                <div class="step-title">Создавай</div>
+                <div class="step-text">Сожми пальцы — рисуй, двигай, трансформируй и экспортируй.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GESTURES -->
+    <section class="gestures-demo" id="gestures">
+        <div class="section-head">
+            <span class="section-eyebrow">Жесты</span>
+            <h2 class="section-title-big">Четыре движения — и ты управляешь всем</h2>
+        </div>
+
+        <div class="gestures-grid">
+            <!-- 1. Pinch draws — кончик пальца тянет за собой светящуюся линию -->
+            <div class="gesture-card reveal">
+                <div class="gesture-window">
+                    <div class="g1-bg-grid"></div>
+                    <div class="g1-pinch-meta">щипок активен</div>
+                    <div class="gesture-stage">
+                        <svg viewBox="0 0 280 160" preserveAspectRatio="xMidYMid meet">
+                            <path class="g1-trail" d="M 30 110 Q 90 30 150 80 T 250 50"/>
+                        </svg>
                     </div>
-                    <div class="gesture-description">
-                        <h4>🤏 Рисование</h4>
-                        <p>Сожмите большой и указательный палец вместе - начнётся рисование</p>
-                    </div>
+                    <div class="g1-cursor"></div>
+                    <div class="gesture-label">ЩИПОК</div>
                 </div>
-
-                <!-- Gesture 2: Open Hand Move -->
-                <div class="gesture-card fade-in">
-                    <div class="gesture-window">
-                        <div class="gesture-animation gesture-move">
-                            <div class="open-hand">🖐️</div>
-                            <div class="cursor-track">
-                                <div class="cursor-dot"></div>
-                            </div>
-                        </div>
-                        <div class="gesture-label">🖐️ ЛАДОНЬ</div>
-                    </div>
-                    <div class="gesture-description">
-                        <h4>👆 Перемещение</h4>
-                        <p>Откройте ладонь - двигайте руку для управления курсором</p>
-                    </div>
-                </div>
-
-                <!-- Gesture 3: Fist for Panels -->
-                <div class="gesture-card fade-in">
-                    <div class="gesture-window">
-                        <div class="gesture-animation gesture-fist">
-                            <div class="fist-hand">✊</div>
-                            <div class="sliding-panel"></div>
-                        </div>
-                        <div class="gesture-label">✊ КУЛАК</div>
-                    </div>
-                    <div class="gesture-description">
-                        <h4>📋 Панели</h4>
-                        <p>Сожмите руку в кулак - откроются панели инструментов</p>
-                    </div>
-                </div>
-
-                <!-- Gesture 4: Two Fingers Rotation -->
-                <div class="gesture-card fade-in">
-                    <div class="gesture-window">
-                        <div class="gesture-animation gesture-rotate">
-                            <div class="two-fingers">✌️</div>
-                            <div class="rotating-object">
-                                <div class="cube-3d"></div>
-                            </div>
-                        </div>
-                        <div class="gesture-label">🔄 ЩИПОК</div>
-                    </div>
-                    <div class="gesture-description">
-                        <h4>🎯 3D Объекты</h4>
-                        <p>Двигайте щипком для вращения и масштабирования объектов</p>
-                    </div>
+                <div class="gesture-description">
+                    <h4>🎨 Рисование</h4>
+                    <p>Сожми большой и указательный — линия идёт за кончиком пальца</p>
                 </div>
             </div>
-        </section>
 
-        <!-- Mode Selection -->
-        <div class="mode-selection" id="modes">
-            <h2 class="section-title fade-in">Выберите Режим</h2>
-            <div class="mode-cards">
-                <!-- 2D Mode Card -->
-                <div class="mode-card fade-in">
-                    <div class="mode-icon">✏️</div>
-                    <h3 class="mode-title">2D Рисование</h3>
-                    <p class="mode-description">
-                        Классическое рисование на плоскости с поддержкой жестов. 
-                        Идеально подходит для 2D искусства.
-                    </p>
-                    <a href="2D.html" class="mode-button">Перейти в 2D</a>
+            <!-- 2. Open hand — палец задаёт позицию курсора, плавная орбита со следом -->
+            <div class="gesture-card reveal">
+                <div class="gesture-window">
+                    <div class="g2-hand-icon">🖐️</div>
+                    <div class="gesture-stage">
+                        <svg viewBox="0 0 280 200" preserveAspectRatio="xMidYMid meet">
+                            <path class="g2-orbit" d="M 50 100 C 50 30, 230 30, 230 100 C 230 170, 50 170, 50 100 Z"/>
+                            <path class="g2-trail" d="M 50 100 C 50 30, 230 30, 230 100 C 230 170, 50 170, 50 100 Z"/>
+                        </svg>
+                    </div>
+                    <div class="g2-cursor"></div>
+                    <div class="gesture-label">ПАЛЕЦ = КУРСОР</div>
                 </div>
+                <div class="gesture-description">
+                    <h4>👆 Перемещение</h4>
+                    <p>Подними указательный — курсор плавно следует за каждым его движением</p>
+                </div>
+            </div>
 
-                <!-- 3D Mode Card -->
-                <div class="mode-card fade-in">
-                    <div class="mode-icon">🔮</div>
-                    <h3 class="mode-title">3D AR Редактор</h3>
-                    <p class="mode-description">
-                        Создание и манипуляция 3D объектами в AR пространстве. 
-                        Проектируйте сцены и взаимодействуйте с жестами.
-                    </p>
-                    <a href="3D.html" class="mode-button">Перейти в 3D</a>
+            <!-- 3. Hold zone — курсор едет в зону, кольцо заполняется, выезжают панели -->
+            <div class="gesture-card reveal">
+                <div class="gesture-window">
+                    <div class="g3-zone">зона</div>
+                    <div class="g3-ring">
+                        <svg viewBox="0 0 56 56">
+                            <circle class="track" cx="28" cy="28" r="24"/>
+                            <circle class="prog"  cx="28" cy="28" r="24"/>
+                        </svg>
+                    </div>
+                    <div class="g3-panel left"></div>
+                    <div class="g3-panel right"></div>
+                    <div class="g3-cursor"></div>
+                    <div class="gesture-label">УДЕРЖАНИЕ</div>
+                </div>
+                <div class="gesture-description">
+                    <h4>📋 Панели</h4>
+                    <p>Задержи курсор в верхней зоне на секунду — панели выедут сами</p>
+                </div>
+            </div>
+
+            <!-- 4. Pinch + drag — куб синхронно крутится с движением курсора -->
+            <div class="gesture-card reveal">
+                <div class="gesture-window">
+                    <div class="g4-stage-inner">
+                        <div class="g4-cube">
+                            <div class="face f1"></div>
+                            <div class="face f2"></div>
+                            <div class="face f3"></div>
+                            <div class="face f4"></div>
+                            <div class="face f5"></div>
+                            <div class="face f6"></div>
+                        </div>
+                        <div class="g4-track">
+                            <div class="g4-cursor"></div>
+                        </div>
+                    </div>
+                    <div class="gesture-label">ЩИПОК + ТЯНИ</div>
+                </div>
+                <div class="gesture-description">
+                    <h4>🧊 3D-объекты</h4>
+                    <p>Зажми щипок и веди — объект двигается, крутится или меняет размер</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- SHOWCASE -->
+    <section class="section-wrap" id="showcase">
+        <div class="section-head">
+            <span class="section-eyebrow">Витрина</span>
+            <h2 class="section-title-big">Загляни внутрь редактора</h2>
+            <p class="section-lead">Анимированные превью реального интерфейса 2D и 3D режимов.</p>
+        </div>
+        <div class="showcase-grid">
+            <div class="showcase-screen screen-2d reveal">
+                <div class="screen-tag">2D режим</div>
+                <div class="screen-2d-canvas">
+                    <svg viewBox="0 0 600 380" preserveAspectRatio="xMidYMid slice">
+                        <path class="screen-2d-line l1" d="M 60 280 Q 150 100 240 220 T 480 180"/>
+                        <path class="screen-2d-line l2" d="M 100 100 L 240 280 L 380 130 L 520 250"/>
+                        <path class="screen-2d-line l3" d="M 80 200 C 150 50, 350 350, 500 150"/>
+                    </svg>
+                </div>
+                <div class="screen-cursor"></div>
+            </div>
+
+            <div class="showcase-screen screen-3d reveal">
+                <div class="screen-tag purple">3D режим</div>
+                <div class="screen-mode-pills">
+                    <div class="p p1"></div>
+                    <div class="p p2"></div>
+                    <div class="p p3"></div>
+                    <div class="p p4"></div>
+                </div>
+                <div class="ground-grid"></div>
+                <div class="screen-3d-stage">
+                    <div class="obj-cube">
+                        <div class="face f1"></div>
+                        <div class="face f2"></div>
+                        <div class="face f3"></div>
+                        <div class="face f4"></div>
+                        <div class="face f5"></div>
+                        <div class="face f6"></div>
+                    </div>
+                    <div class="obj-sphere"></div>
+                    <div class="obj-pyramid"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS COUNTER -->
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-block reveal">
+                <div class="stat-num"><span class="counter" data-target="21">0</span></div>
+                <div class="stat-caption">Точек руки</div>
+            </div>
+            <div class="stat-block reveal">
+                <div class="stat-num"><span class="counter" data-target="60">0</span><span class="suffix"> fps</span></div>
+                <div class="stat-caption">Распознавание</div>
+            </div>
+            <div class="stat-block reveal">
+                <div class="stat-num"><span class="counter" data-target="100">0</span><span class="suffix">%</span></div>
+                <div class="stat-caption">Локально</div>
+            </div>
+            <div class="stat-block reveal">
+                <div class="stat-num"><span class="counter" data-target="2">0</span><span class="suffix">D + 3D</span></div>
+                <div class="stat-caption">Режима</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODE SELECTION -->
+    <section class="modes-wrap" id="modes">
+        <div class="section-head">
+            <span class="section-eyebrow">Запуск</span>
+            <h2 class="section-title-big">Выбери режим и начни</h2>
+            <p class="section-lead">Оба открываются прямо в браузере — обучение всплывёт автоматически или по кнопке «?».</p>
+        </div>
+        <div class="mode-cards">
+            <div class="mode-card reveal">
+                <div class="mode-preview mode-preview-2d">
+                    <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+                        <path class="mode-preview-2d-line" d="M 30 150 Q 100 30 200 110 T 370 80"/>
+                    </svg>
+                </div>
+                <div class="mode-body">
+                    <span class="mode-tag">2D-холст</span>
+                    <h3 class="mode-title">2D Рисование</h3>
+                    <p class="mode-desc">Кисть, фигуры, цветовая палитра. Управляй жестами на плоском холсте, сохраняй PNG.</p>
+                    <div class="mode-features">
+                        <span class="mode-feature-pill">✏️ Кисть</span>
+                        <span class="mode-feature-pill">📏 Фигуры</span>
+                        <span class="mode-feature-pill">🎨 Палитра</span>
+                        <span class="mode-feature-pill">↩️ Undo/Redo</span>
+                        <span class="mode-feature-pill">💾 PNG</span>
+                    </div>
+                    <a href="2D.html" class="mode-go-btn">Открыть 2D <span>→</span></a>
+                </div>
+            </div>
+
+            <div class="mode-card purple reveal">
+                <div class="mode-preview mode-preview-3d">
+                    <div class="mode-preview-3d-cube">
+                        <div class="cube-face mpc1"></div>
+                        <div class="cube-face mpc2"></div>
+                        <div class="cube-face mpc3"></div>
+                        <div class="cube-face mpc4"></div>
+                        <div class="cube-face mpc5"></div>
+                        <div class="cube-face mpc6"></div>
+                    </div>
+                </div>
+                <div class="mode-body">
+                    <span class="mode-tag">3D-сцена</span>
+                    <h3 class="mode-title">3D AR Редактор</h3>
+                    <p class="mode-desc">Создавай объекты, переключай режимы наведением, трансформируй щипком в 3D.</p>
+                    <div class="mode-features">
+                        <span class="mode-feature-pill">🧊 Фигуры</span>
+                        <span class="mode-feature-pill">↻ Поворот</span>
+                        <span class="mode-feature-pill">⇅ Размер</span>
+                        <span class="mode-feature-pill">📍 Позиция</span>
+                        <span class="mode-feature-pill">✏️ 3D-кисть</span>
+                    </div>
+                    <a href="3D.html" class="mode-go-btn">Открыть 3D <span>→</span></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
     <footer class="footer">
-        <p class="footer-text">Draw AR © 2026 | Интерактивное рисование жестами</p>
+        <div class="footer-grid">
+            <div class="footer-col footer-brand">
+                <div class="logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Draw AR</span>
+                </div>
+                <p>Жестовый редактор 2D и 3D в браузере. Никаких установок — только камера и твои руки.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Режимы</h4>
+                <ul>
+                    <li><a href="2D.html">2D Рисование</a></li>
+                    <li><a href="3D.html">3D AR Редактор</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Навигация</h4>
+                <ul>
+                    <li><a href="#features">Возможности</a></li>
+                    <li><a href="#workflow">Как работает</a></li>
+                    <li><a href="#gestures">Жесты</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Технологии</h4>
+                <ul>
+                    <li><a href="#">MediaPipe</a></li>
+                    <li><a href="#">Three.js</a></li>
+                    <li><a href="#">WebRTC</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>Draw AR © 2026</span>
+            <span>Сделано жестами 🤏</span>
+        </div>
     </footer>
 
+    <!-- Floating help button -->
+    <button class="help-fab" id="helpFab" type="button" title="Показать обучение" aria-label="Открыть обучение">?</button>
+
+    <!-- Onboarding modal -->
+    <div class="onboarding-overlay" id="onboardingOverlay" role="dialog" aria-modal="true" aria-labelledby="onbTitle">
+        <div class="onboarding-modal">
+            <button class="onboarding-close" id="onbClose" type="button" aria-label="Закрыть обучение">×</button>
+            <div class="onboarding-content">
+                <div class="onboarding-slide active" data-slide="0">
+                    <div class="onboarding-visual">
+                        <span class="visual-welcome-spark s1">✨</span>
+                        <span class="visual-welcome-spark s2">⭐</span>
+                        <span class="visual-welcome-spark s3">✦</span>
+                        <span class="visual-welcome-spark s4">✨</span>
+                        <div class="visual-welcome">👋</div>
+                    </div>
+                    <h2 class="onboarding-title" id="onbTitle">Привет! Это Draw AR</h2>
+                    <p class="onboarding-text">
+                        Здесь ты рисуешь и создаёшь 3D-объекты движениями руки. Камера следит за пальцами, а специальные жесты управляют интерфейсом.
+                    </p>
+                    <p class="onboarding-text">За пару шагов покажу основное.</p>
+                </div>
+
+                <div class="onboarding-slide" data-slide="1">
+                    <div class="onboarding-visual">
+                        <div class="visual-pinch-stage">
+                            <div class="pinch-hand-emoji">🤏</div>
+                            <div class="pinch-pulse-dot"></div>
+                            <svg class="pinch-line-svg" viewBox="0 0 220 60">
+                                <path class="pinch-line-path" d="M 10 45 Q 60 10 110 30 T 210 25"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <h2 class="onboarding-title">Жест «Щипок»</h2>
+                    <p class="onboarding-text">Сожми большой и указательный пальцы вместе — это главный жест.</p>
+                    <div class="onboarding-tip">
+                        🎨 <b>В 2D</b> — рисует кистью или фигурой.<br>
+                        🧊 <b>В 3D</b> — двигает, вращает или масштабирует выбранный объект.<br>
+                        🖱️ <b>На панелях</b> — нажимает кнопки и двигает ползунки.
+                    </div>
+                </div>
+
+                <div class="onboarding-slide" data-slide="2">
+                    <div class="onboarding-visual">
+                        <div class="visual-hold-stage">
+                            <div class="hold-zone-rect">удержать</div>
+                            <svg class="hold-ring-svg" viewBox="0 0 60 60">
+                                <circle class="hold-ring-track" cx="30" cy="30" r="26"/>
+                                <circle class="hold-ring-prog"  cx="30" cy="30" r="26"/>
+                            </svg>
+                            <div class="hold-cursor"></div>
+                            <div class="hold-panels left"></div>
+                            <div class="hold-panels right"></div>
+                        </div>
+                    </div>
+                    <h2 class="onboarding-title">Удержание в зоне</h2>
+                    <p class="onboarding-text">
+                        Чтобы открыть панели инструментов, подведи курсор к верхней светящейся области и задержи на секунду — вокруг курсора заполнится кольцо, и панели выедут.
+                    </p>
+                    <div class="onboarding-tip">
+                        ✕ Когда панели открыты, в центре экрана появляется зона закрытия. Задержись там — панели свернутся.
+                    </div>
+                </div>
+
+                <div class="onboarding-slide" data-slide="3">
+                    <div class="onboarding-visual">
+                        <div class="visual-modes-stage">
+                            <div class="mode-mini m1">📍</div>
+                            <div class="mode-mini m2">📏</div>
+                            <div class="mode-mini m3">↻</div>
+                            <div class="mode-mini m4">⇅</div>
+                            <div class="mode-cursor"></div>
+                            <div class="modes-hint">Наведи — переключится</div>
+                        </div>
+                    </div>
+                    <h2 class="onboarding-title">Режимы в 3D</h2>
+                    <p class="onboarding-text">
+                        Над сценой расположены 4 цветные зоны: <b style="color:#ff5b5b">XY</b>, <b style="color:#f5ff66">Глубина</b>, <b style="color:#5cff7d">Крутить</b>, <b style="color:#8aa4ff">Размер</b>. Просто наведи курсор — режим переключится автоматически.
+                    </p>
+                    <div class="onboarding-tip">
+                        💡 Сначала добавь объект из панели (куб, сферу, …) — потом наведи на нужный режим и сожми пальцы для трансформации.
+                    </div>
+                </div>
+
+                <div class="onboarding-slide" data-slide="4">
+                    <div class="onboarding-visual">
+                        <div class="visual-ready-stage">
+                            <span class="ready-confetti c1">🎉</span>
+                            <span class="ready-confetti c2">✨</span>
+                            <span class="ready-confetti c3">🎊</span>
+                            <span class="ready-confetti c4">⭐</span>
+                            <div class="ready-checkmark">✓</div>
+                        </div>
+                    </div>
+                    <h2 class="onboarding-title">Готово, можно начинать</h2>
+                    <p class="onboarding-text">
+                        Разреши доступ к камере при первом запуске и выбери режим. Кнопка <b>?</b> в правом нижнем углу всегда откроет это обучение заново.
+                    </p>
+                    <div class="onboarding-cta-row">
+                        <a href="2D.html" class="onboarding-cta">✏️ Перейти в 2D</a>
+                        <a href="3D.html" class="onboarding-cta secondary">🔮 Перейти в 3D</a>
+                    </div>
+                </div>
+            </div>
+            <div class="onboarding-footer">
+                <div class="onboarding-progress" id="onbProgress">
+                    <span class="progress-dot active" data-dot="0"></span>
+                    <span class="progress-dot" data-dot="1"></span>
+                    <span class="progress-dot" data-dot="2"></span>
+                    <span class="progress-dot" data-dot="3"></span>
+                    <span class="progress-dot" data-dot="4"></span>
+                </div>
+                <div class="onboarding-buttons">
+                    <button class="onb-btn" id="onbSkip" type="button">Пропустить</button>
+                    <button class="onb-btn ghost" id="onbBack" type="button" disabled>Назад</button>
+                    <button class="onb-btn primary" id="onbNext" type="button">Далее</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script defer>
-        // Initialize particles
-        function initParticles() {
-            const container = document.getElementById('particles');
-            const particleCount = 30;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.style.position = 'absolute';
-                particle.style.width = Math.random() * 3 + 1 + 'px';
-                particle.style.height = particle.style.width;
-                particle.style.background = 'rgba(93, 220, 255, 0.4)';
-                particle.style.borderRadius = '50%';
-                particle.style.left = Math.random() * 100 + 'vw';
-                particle.style.top = Math.random() * 100 + 'vh';
-                particle.style.animation = `float ${Math.random() * 15 + 15}s infinite ease-in-out`;
-                particle.style.animationDelay = Math.random() * 8 + 's';
-                container.appendChild(particle);
+        /* ===== CUSTOM CURSOR ===== */
+        (function initCursor() {
+            const dot = document.getElementById('cursorDot');
+            const ring = document.getElementById('cursorRing');
+            if (!dot || !ring) return;
+            if (window.matchMedia('(max-width: 900px)').matches) return;
+
+            let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+            let rx = mx, ry = my;
+            window.addEventListener('mousemove', (e) => {
+                mx = e.clientX; my = e.clientY;
+                dot.style.left = mx + 'px';
+                dot.style.top  = my + 'px';
+            }, { passive: true });
+
+            function loop() {
+                rx += (mx - rx) * 0.18;
+                ry += (my - ry) * 0.18;
+                ring.style.left = rx + 'px';
+                ring.style.top  = ry + 'px';
+                requestAnimationFrame(loop);
             }
-        }
+            loop();
 
-        // Liquid Glass Background Animation
-        function initLiquidGlassBackground() {
-            const canvas = document.getElementById('shapes-canvas');
-            const ctx = canvas.getContext('2d');
-            
-            function resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+            const interactive = 'a, button, .feature-card, .gesture-card, .mode-card, .stat-block, .progress-dot, .nav-link, .marquee, .help-fab';
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest(interactive)) {
+                    dot.classList.add('hover');
+                    ring.classList.add('hover');
+                }
+            });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest(interactive)) {
+                    dot.classList.remove('hover');
+                    ring.classList.remove('hover');
+                }
+            });
+        })();
+
+        /* ===== SCROLL PROGRESS BAR + NAVBAR SHRINK ===== */
+        (function initScrollUi() {
+            const bar = document.getElementById('scrollProgress');
+            const nav = document.getElementById('navbar');
+            function update() {
+                const h = document.documentElement.scrollHeight - window.innerHeight;
+                const p = h > 0 ? (window.scrollY / h) * 100 : 0;
+                if (bar) bar.style.width = p + '%';
+                if (nav) nav.classList.toggle('shrunk', window.scrollY > 40);
             }
-            resize();
-            window.addEventListener('resize', resize);
+            window.addEventListener('scroll', update, { passive: true });
+            update();
+        })();
 
-            // Light source position (top-left, creating shadows to bottom-right)
-            const lightX = canvas.width * 0.2;
-            const lightY = canvas.height * 0.15;
-            const lightIntensity = 0.7;
+        /* ===== HERO PARALLAX ON MOUSE ===== */
+        (function initHeroParallax() {
+            if (window.matchMedia('(max-width: 900px)').matches) return;
+            const hero = document.querySelector('.hero');
+            const floats = document.querySelectorAll('.hero-floats [data-parallax]');
+            if (!hero || !floats.length) return;
 
-            // Shapes array
-            const shapes = [];
-            const linePaths = [];
-
-            // Shape class
-            class Shape {
-                constructor(type) {
-                    this.type = type;
-                    this.x = Math.random() * canvas.width;
-                    this.y = Math.random() * canvas.height;
-                    this.size = Math.random() * 60 + 30;
-                    this.rotation = Math.random() * Math.PI * 2;
-                    this.rotationSpeed = (Math.random() - 0.5) * 0.02;
-                    this.vx = (Math.random() - 0.5) * 0.8;
-                    this.vy = (Math.random() - 0.5) * 0.8;
-                    this.opacity = Math.random() * 0.3 + 0.15;
-                    
-                    // Color palette - blues and cyans
-                    const colors = [
-                        { r: 93, g: 220, b: 255 },   // cyan
-                        { r: 60, g: 140, b: 200 },   // dark blue
-                        { r: 100, g: 160, b: 220 },  // light blue
-                        { r: 140, g: 180, b: 230 },  // lighter blue
-                        { r: 70, g: 130, b: 180 },   // steel blue
-                    ];
-                    this.color = colors[Math.floor(Math.random() * colors.length)];
-                }
-
-                update() {
-                    this.rotation += this.rotationSpeed;
-                    this.x += this.vx;
-                    this.y += this.vy;
-
-                    // Bounce off edges
-                    if (this.x < -this.size) this.x = canvas.width + this.size;
-                    if (this.x > canvas.width + this.size) this.x = -this.size;
-                    if (this.y < -this.size) this.y = canvas.height + this.size;
-                    if (this.y > canvas.height + this.size) this.y = -this.size;
-                }
-
-                draw() {
-                    ctx.save();
-                    ctx.translate(this.x, this.y);
-                    ctx.rotate(this.rotation);
-
-                    // Calculate shadow based on distance from light
-                    const distToLight = Math.sqrt(
-                        Math.pow(this.x - lightX, 2) + 
-                        Math.pow(this.y - lightY, 2)
-                    );
-                    const maxDist = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
-                    const shadowFactor = Math.max(0.2, 1 - (distToLight / maxDist) * lightIntensity);
-                    
-                    // Shadow offset (away from light)
-                    const shadowX = (this.x - lightX) * 0.15;
-                    const shadowY = (this.y - lightY) * 0.15;
-                    const shadowBlur = this.size * 0.8 * shadowFactor;
-
-                    ctx.shadowColor = `rgba(0, 0, 0, ${shadowFactor * 0.4})`;
-                    ctx.shadowBlur = shadowBlur;
-                    ctx.shadowOffsetX = shadowX;
-                    ctx.shadowOffsetY = shadowY;
-
-                    ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`;
-                    ctx.strokeStyle = `rgba(${this.color.r + 30}, ${this.color.g + 30}, ${this.color.b + 30}, ${this.opacity * 0.8})`;
-                    ctx.lineWidth = 1.5;
-
-                    switch(this.type) {
-                        case 'circle':
-                            ctx.beginPath();
-                            ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
-                            ctx.fill();
-                            ctx.stroke();
-                            break;
-                        case 'triangle':
-                            ctx.beginPath();
-                            ctx.moveTo(0, -this.size / 2);
-                            ctx.lineTo(this.size / 2, this.size / 2);
-                            ctx.lineTo(-this.size / 2, this.size / 2);
-                            ctx.closePath();
-                            ctx.fill();
-                            ctx.stroke();
-                            break;
-                        case 'square':
-                            ctx.beginPath();
-                            ctx.rect(-this.size / 2, -this.size / 2, this.size, this.size);
-                            ctx.fill();
-                            ctx.stroke();
-                            break;
-                        case 'hexagon':
-                            ctx.beginPath();
-                            for (let i = 0; i < 6; i++) {
-                                const angle = (Math.PI / 3) * i - Math.PI / 6;
-                                const x = Math.cos(angle) * this.size / 2;
-                                const y = Math.sin(angle) * this.size / 2;
-                                if (i === 0) ctx.moveTo(x, y);
-                                else ctx.lineTo(x, y);
-                            }
-                            ctx.closePath();
-                            ctx.fill();
-                            ctx.stroke();
-                            break;
-                    }
-                    ctx.restore();
-                }
-            }
-
-            // Line path class for drawing lines
-            class LinePath {
-                constructor() {
-                    this.points = [];
-                    this.maxPoints = 100;
-                    this.opacity = Math.random() * 0.25 + 0.1;
-                    this.lineWidth = Math.random() * 2 + 1;
-                    
-                    const colors = [
-                        { r: 93, g: 220, b: 255 },
-                        { r: 70, g: 130, b: 180 },
-                        { r: 135, g: 206, b: 250 },
-                    ];
-                    this.color = colors[Math.floor(Math.random() * colors.length)];
-                    
-                    // Start position
-                    this.x = Math.random() * canvas.width;
-                    this.y = Math.random() * canvas.height;
-                    this.vx = (Math.random() - 0.5) * 1.5;
-                    this.vy = (Math.random() - 0.5) * 1.5;
-                    
-                    // Initialize points
-                    for (let i = 0; i < 20; i++) {
-                        this.points.push({ x: this.x, y: this.y });
-                    }
-                }
-
-                update() {
-                    // Move the whole path
-                    this.x += this.vx;
-                    this.y += this.vy;
-
-                    // Bounce
-                    if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-                    if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-
-                    // Add new point and remove old
-                    this.points.push({ x: this.x, y: this.y });
-                    if (this.points.length > this.maxPoints) {
-                        this.points.shift();
-                    }
-                }
-
-                draw() {
-                    if (this.points.length < 2) return;
-
-                    ctx.save();
-                    
-                    // Calculate shadow
-                    const centerX = this.points.reduce((a, p) => a + p.x, 0) / this.points.length;
-                    const centerY = this.points.reduce((a, p) => a + p.y, 0) / this.points.length;
-                    const distToLight = Math.sqrt(
-                        Math.pow(centerX - lightX, 2) + 
-                        Math.pow(centerY - lightY, 2)
-                    );
-                    const maxDist = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
-                    const shadowFactor = Math.max(0.3, 1 - (distToLight / maxDist) * lightIntensity);
-                    
-                    const shadowX = (centerX - lightX) * 0.1;
-                    const shadowY = (centerY - lightY) * 0.1;
-
-                    ctx.shadowColor = `rgba(0, 0, 0, ${shadowFactor * 0.35})`;
-                    ctx.shadowBlur = 15 * shadowFactor;
-                    ctx.shadowOffsetX = shadowX;
-                    ctx.shadowOffsetY = shadowY;
-
-                    // Draw glow
-                    ctx.strokeStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity * 0.3})`;
-                    ctx.lineWidth = this.lineWidth + 4;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(this.points[0].x, this.points[0].y);
-                    for (let i = 1; i < this.points.length; i++) {
-                        ctx.lineTo(this.points[i].x, this.points[i].y);
-                    }
-                    ctx.stroke();
-
-                    // Draw main line
-                    const gradient = ctx.createLinearGradient(
-                        this.points[0].x, this.points[0].y,
-                        this.points[this.points.length - 1].x, this.points[this.points.length - 1].y
-                    );
-                    gradient.addColorStop(0, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`);
-                    gradient.addColorStop(0.3, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`);
-                    gradient.addColorStop(0.7, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`);
-                    gradient.addColorStop(1, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`);
-
-                    ctx.strokeStyle = gradient;
-                    ctx.lineWidth = this.lineWidth;
-                    ctx.beginPath();
-                    ctx.moveTo(this.points[0].x, this.points[0].y);
-                    for (let i = 1; i < this.points.length; i++) {
-                        ctx.lineTo(this.points[i].x, this.points[i].y);
-                    }
-                    ctx.stroke();
-
-                    ctx.restore();
-                }
-            }
-
-            // Create shapes
-            for (let i = 0; i < 12; i++) {
-                const types = ['circle', 'triangle', 'square', 'hexagon'];
-                shapes.push(new Shape(types[Math.floor(Math.random() * types.length)]));
-            }
-
-            // Create line paths
-            for (let i = 0; i < 8; i++) {
-                linePaths.push(new LinePath());
-            }
-
-            // Animation loop
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Update and draw shapes
-                shapes.forEach(shape => {
-                    shape.update();
-                    shape.draw();
+            hero.addEventListener('mousemove', (e) => {
+                const rect = hero.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width  - 0.5;
+                const y = (e.clientY - rect.top)  / rect.height - 0.5;
+                floats.forEach(el => {
+                    const k = parseFloat(el.dataset.parallax) || 0.4;
+                    el.style.transform = `translate(${x * 30 * k}px, ${y * 30 * k}px)`;
                 });
+            }, { passive: true });
 
-                // Update and draw lines
-                linePaths.forEach(line => {
-                    line.update();
-                    line.draw();
+            hero.addEventListener('mouseleave', () => {
+                floats.forEach(el => el.style.transform = '');
+            });
+        })();
+
+        /* ===== FEATURE CARDS — TILT + MOUSE GLOW POSITION ===== */
+        (function initFeatureCards() {
+            if (window.matchMedia('(max-width: 900px)').matches) return;
+            document.querySelectorAll('.feature-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const r = card.getBoundingClientRect();
+                    const x = e.clientX - r.left;
+                    const y = e.clientY - r.top;
+                    card.style.setProperty('--mx', x + 'px');
+                    card.style.setProperty('--my', y + 'px');
+                    const rx = ((y / r.height) - 0.5) * -6;
+                    const ry = ((x / r.width)  - 0.5) *  6;
+                    card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px)`;
                 });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = '';
+                });
+            });
+        })();
 
-                requestAnimationFrame(animate);
-            }
+        /* ===== MAGNETIC BUTTONS ===== */
+        (function initMagnetic() {
+            if (window.matchMedia('(max-width: 900px)').matches) return;
+            document.querySelectorAll('.magnetic').forEach(btn => {
+                btn.addEventListener('mousemove', (e) => {
+                    const r = btn.getBoundingClientRect();
+                    const x = e.clientX - r.left - r.width / 2;
+                    const y = e.clientY - r.top  - r.height / 2;
+                    btn.style.transform = `translate(${x * 0.18}px, ${y * 0.25}px)`;
+                });
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.transform = '';
+                });
+            });
+        })();
 
-            animate();
-        }
-
-        // Intersection Observer for fade-in animations
-        function initIntersectionObserver() {
-            const observer = new IntersectionObserver((entries) => {
+        /* ===== INTERSECTION REVEAL ===== */
+        (function initReveal() {
+            const obs = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('visible');
+                        if (entry.target.dataset.once !== 'no') obs.unobserve(entry.target);
                     }
                 });
-            }, {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            });
+            }, { threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
+            document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+        })();
 
-            // Observe all fade-in elements
-            document.querySelectorAll('.fade-in').forEach(el => {
-                observer.observe(el);
-            });
-        }
+        /* ===== COUNTER ANIMATION ===== */
+        (function initCounters() {
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) return;
+                    const el = entry.target;
+                    const target = parseFloat(el.dataset.target) || 0;
+                    const dur = 1400;
+                    const start = performance.now();
+                    function step(now) {
+                        const t = Math.min((now - start) / dur, 1);
+                        const eased = 1 - Math.pow(1 - t, 3);
+                        const val = Math.floor(eased * target);
+                        el.textContent = val;
+                        if (t < 1) requestAnimationFrame(step);
+                        else el.textContent = target;
+                    }
+                    requestAnimationFrame(step);
+                    obs.unobserve(el);
+                });
+            }, { threshold: 0.4 });
+            document.querySelectorAll('.counter').forEach(el => obs.observe(el));
+        })();
 
-        // Add float animation to CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes float {
-                0%, 100% { transform: translate(0, 0) rotate(0deg); }
-                25% { transform: translate(20px, -20px) rotate(90deg); }
-                50% { transform: translate(0, -40px) rotate(180deg); }
-                75% { transform: translate(-20px, -20px) rotate(270deg); }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Smooth scroll for navigation links
+        /* ===== SMOOTH SCROLL ===== */
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
-                e.preventDefault();
                 const targetId = this.getAttribute('href');
-                if (targetId === '#') return;
-                
-                const targetElement = document.querySelector(targetId);
-                if (targetElement) {
-                    window.scrollTo({
-                        top: targetElement.offsetTop - 80,
-                        behavior: 'smooth'
-                    });
-                }
+                if (targetId === '#' || targetId.length < 2) return;
+                const targetEl = document.querySelector(targetId);
+                if (!targetEl) return;
+                e.preventDefault();
+                window.scrollTo({ top: targetEl.offsetTop - 70, behavior: 'smooth' });
             });
         });
 
-        // Initialize everything when page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            initParticles();
-            initLiquidGlassBackground();
-            initIntersectionObserver();
-            
-            // Add initial visible class to hero elements
-            setTimeout(() => {
-                document.querySelector('.hero-title').style.animation = 'fadeUp 1s ease forwards';
-                document.querySelector('.hero-subtitle').style.animation = 'fadeUp 1s ease 0.2s forwards';
-                document.querySelector('.scroll-indicator').style.animation = 'fadeIn 1s ease 0.8s forwards';
-            }, 100);
-        });
-
-        // Parallax effect for particles (optimized with throttle)
-        let scrollThrottleTimeout;
-        window.addEventListener('scroll', () => {
-            if (scrollThrottleTimeout) return;
-            scrollThrottleTimeout = setTimeout(() => {
-                scrollThrottleTimeout = null;
-                const scrolled = window.pageYOffset;
-                const particles = document.querySelectorAll('#particles div');
-                for (const particle of particles) {
-                    const speed = parseFloat(particle.style.width) * 0.5;
-                    particle.style.transform = `translateY(${-(scrolled * speed * 0.01)}px)`;
+        /* ===== PARTICLES ===== */
+        (function initParticles() {
+            const c = document.getElementById('particles');
+            if (!c) return;
+            const count = 28;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                const s = Math.random() * 3 + 1;
+                p.style.cssText = `
+                    position:absolute;width:${s}px;height:${s}px;
+                    background:rgba(93,220,255,0.45);border-radius:50%;
+                    left:${Math.random() * 100}vw;top:${Math.random() * 100}vh;
+                    animation:floatPart ${Math.random() * 15 + 15}s infinite ease-in-out;
+                    animation-delay:${Math.random() * 8}s;
+                `;
+                c.appendChild(p);
+            }
+            const sty = document.createElement('style');
+            sty.textContent = `
+                @keyframes floatPart {
+                    0%, 100% { transform: translate(0, 0); }
+                    25%      { transform: translate(20px, -20px); }
+                    50%      { transform: translate(0, -40px); }
+                    75%      { transform: translate(-20px, -20px); }
                 }
-            }, 16);
-        });
+            `;
+            document.head.appendChild(sty);
+        })();
+
+        /* ===== HAND-SKELETON CONSTELLATION BACKGROUND =====
+           Парящие силуэты рук-скелетов в стиле MediaPipe — на тему проекта */
+        (function initHandSkeletonBackground() {
+            const canvas = document.getElementById('shapes-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+            resize(); addEventListener('resize', resize);
+
+            /* Идеализированная раскрытая ладонь, ладонью к камере, пальцами вверх.
+               Координаты в нормализованной системе [0..1] относительно габарита руки. */
+            const HAND_TEMPLATE = [
+                [0.50, 1.00],                                          // 0  wrist
+                [0.34, 0.95], [0.24, 0.85], [0.18, 0.72], [0.13, 0.58], // 1-4 thumb
+                [0.42, 0.72], [0.40, 0.52], [0.39, 0.36], [0.38, 0.22], // 5-8 index
+                [0.50, 0.70], [0.50, 0.46], [0.50, 0.28], [0.50, 0.10], // 9-12 middle
+                [0.58, 0.72], [0.60, 0.50], [0.61, 0.34], [0.62, 0.20], // 13-16 ring
+                [0.66, 0.78], [0.70, 0.62], [0.72, 0.50], [0.74, 0.40]  // 17-20 pinky
+            ];
+            const HAND_CONN = [
+                [0,1],[1,2],[2,3],[3,4],
+                [0,5],[5,6],[6,7],[7,8],
+                [0,9],[9,10],[10,11],[11,12],
+                [0,13],[13,14],[14,15],[15,16],
+                [0,17],[17,18],[18,19],[19,20],
+                [5,9],[9,13],[13,17],[5,17]
+            ];
+            const TIPS = new Set([4, 8, 12, 16, 20]);
+
+            const mouse = { x: -9999, y: -9999, has: false };
+            addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX; mouse.y = e.clientY; mouse.has = true;
+            }, { passive: true });
+            addEventListener('mouseleave', () => { mouse.has = false; });
+
+            class Hand {
+                constructor() { this.reset(true); }
+                reset(initial = false) {
+                    if (initial) {
+                        this.cx = Math.random() * canvas.width;
+                        this.cy = Math.random() * canvas.height;
+                    } else {
+                        // Заходит сбоку
+                        const side = Math.floor(Math.random() * 4);
+                        if (side === 0) { this.cx = -250;                this.cy = Math.random() * canvas.height; }
+                        if (side === 1) { this.cx = canvas.width + 250;  this.cy = Math.random() * canvas.height; }
+                        if (side === 2) { this.cx = Math.random() * canvas.width; this.cy = -250; }
+                        if (side === 3) { this.cx = Math.random() * canvas.width; this.cy = canvas.height + 250; }
+                    }
+                    this.size      = 100 + Math.random() * 120;
+                    this.rot       = Math.random() * Math.PI * 2;
+                    this.rotSpeed  = (Math.random() - 0.5) * 0.0035;
+                    const ang      = Math.random() * Math.PI * 2;
+                    const sp       = 0.15 + Math.random() * 0.3;
+                    this.vx        = Math.cos(ang) * sp;
+                    this.vy        = Math.sin(ang) * sp;
+                    this.alpha     = 0.07 + Math.random() * 0.13;
+                    this.color     = Math.random() < 0.5 ? [93, 220, 255] : [192, 132, 252];
+                    this.pulsePh   = Math.random() * Math.PI * 2;
+                    this.pinchPh   = Math.random() * Math.PI * 2;
+                    this.glow      = 0;
+                }
+                update(t) {
+                    this.cx       += this.vx;
+                    this.cy       += this.vy;
+                    this.rot      += this.rotSpeed;
+
+                    // Если совсем уплыла — переродить со стороны
+                    if (this.cx < -300 || this.cx > canvas.width + 300 ||
+                        this.cy < -300 || this.cy > canvas.height + 300) this.reset(false);
+
+                    // Засветка от курсора
+                    if (mouse.has) {
+                        const dx = this.cx - mouse.x;
+                        const dy = this.cy - mouse.y;
+                        const d  = Math.sqrt(dx*dx + dy*dy);
+                        const target = d < 280 ? Math.max(0, 1 - d / 280) : 0;
+                        this.glow += (target - this.glow) * 0.08;
+                    } else {
+                        this.glow += (0 - this.glow) * 0.08;
+                    }
+                }
+                draw(t) {
+                    const pulse = 0.85 + Math.sin(t * 0.0008 + this.pulsePh) * 0.15;
+                    const a = (this.alpha + this.glow * 0.5) * pulse;
+                    if (a < 0.01) return;
+
+                    // Лёгкий "щипок" — большой и указательный сходятся синусоидально
+                    const pinch = 0.5 + 0.5 * Math.sin(t * 0.0014 + this.pinchPh);
+                    const sn = Math.sin(this.rot), cs = Math.cos(this.rot);
+                    const pts = HAND_TEMPLATE.map(([x, y], i) => {
+                        let lx = x - 0.5;
+                        let ly = y - 0.5;
+                        // Тянем кончик большого пальца к кончику указательного
+                        if (i === 4) {
+                            const tx = HAND_TEMPLATE[8][0] - 0.5;
+                            const ty = HAND_TEMPLATE[8][1] - 0.5;
+                            lx = lx + (tx - lx) * pinch * 0.55;
+                            ly = ly + (ty - ly) * pinch * 0.55;
+                        }
+                        if (i === 3) {
+                            const tx = HAND_TEMPLATE[7][0] - 0.5;
+                            const ty = HAND_TEMPLATE[7][1] - 0.5;
+                            lx = lx + (tx - lx) * pinch * 0.32;
+                            ly = ly + (ty - ly) * pinch * 0.32;
+                        }
+                        lx *= this.size;
+                        ly *= this.size;
+                        return {
+                            x: this.cx + lx * cs - ly * sn,
+                            y: this.cy + lx * sn + ly * cs
+                        };
+                    });
+
+                    const [r, g, b] = this.color;
+                    ctx.lineCap  = 'round';
+                    ctx.lineJoin = 'round';
+
+                    // Кости
+                    ctx.shadowColor = `rgba(${r},${g},${b},${Math.min(a * 1.6, 0.6)})`;
+                    ctx.shadowBlur  = 12 + this.glow * 18;
+                    ctx.strokeStyle = `rgba(${r},${g},${b},${a})`;
+                    ctx.lineWidth   = 1.6;
+                    ctx.beginPath();
+                    HAND_CONN.forEach(([i, j]) => {
+                        ctx.moveTo(pts[i].x, pts[i].y);
+                        ctx.lineTo(pts[j].x, pts[j].y);
+                    });
+                    ctx.stroke();
+
+                    // Узлы
+                    ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(a * 1.7, 0.85)})`;
+                    pts.forEach((p, i) => {
+                        const radius = TIPS.has(i) ? 3.4 : 2;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+
+                    // Запястье — белая яркая точка
+                    ctx.fillStyle = `rgba(255,255,255,${Math.min(a * 0.9, 0.7)})`;
+                    ctx.beginPath();
+                    ctx.arc(pts[0].x, pts[0].y, 1.6, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Светящаяся точка между большим и указательным при щипке
+                    if (pinch > 0.7) {
+                        const px = (pts[4].x + pts[8].x) / 2;
+                        const py = (pts[4].y + pts[8].y) / 2;
+                        const ip = (pinch - 0.7) / 0.3;
+                        ctx.shadowBlur = 18;
+                        ctx.fillStyle = `rgba(255,255,255,${a * ip * 1.4})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 2.5 + ip * 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            const handCount = Math.min(8, Math.max(4, Math.floor(canvas.width / 320)));
+            const hands = [];
+            for (let i = 0; i < handCount; i++) hands.push(new Hand());
+
+            // Линии-созвездия между близкими руками
+            function drawConstellations() {
+                ctx.lineWidth = 1;
+                for (let i = 0; i < hands.length; i++) {
+                    for (let j = i + 1; j < hands.length; j++) {
+                        const dx = hands[i].cx - hands[j].cx;
+                        const dy = hands[i].cy - hands[j].cy;
+                        const d  = Math.sqrt(dx*dx + dy*dy);
+                        if (d < 420) {
+                            const a = (1 - d / 420) * 0.06;
+                            ctx.strokeStyle = `rgba(140, 180, 255, ${a})`;
+                            ctx.beginPath();
+                            ctx.moveTo(hands[i].cx, hands[i].cy);
+                            ctx.lineTo(hands[j].cx, hands[j].cy);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            // Невидимый "указательный курсор" вокруг мыши — едва заметный отголосок руки
+            function drawMouseHand(t) {
+                if (!mouse.has) return;
+                const ph = 0.5 + 0.5 * Math.sin(t * 0.003);
+                ctx.beginPath();
+                ctx.arc(mouse.x, mouse.y, 80 + ph * 14, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(93, 220, 255, ${0.04 + ph * 0.04})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(mouse.x, mouse.y, 30 + ph * 6, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(192, 132, 252, ${0.06 + ph * 0.06})`;
+                ctx.stroke();
+            }
+
+            (function loop() {
+                const t = performance.now();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawConstellations();
+                hands.forEach(h => { h.update(t); h.draw(t); });
+                drawMouseHand(t);
+                requestAnimationFrame(loop);
+            })();
+        })();
+
+        /* ===== ONBOARDING ===== */
+        (function initOnboarding() {
+            const STORAGE_KEY = 'drawAR_onboardingShown_v1';
+            const overlay  = document.getElementById('onboardingOverlay');
+            const closeBtn = document.getElementById('onbClose');
+            const skipBtn  = document.getElementById('onbSkip');
+            const backBtn  = document.getElementById('onbBack');
+            const nextBtn  = document.getElementById('onbNext');
+            const progress = document.getElementById('onbProgress');
+            const helpFab  = document.getElementById('helpFab');
+            const slides   = Array.from(document.querySelectorAll('.onboarding-slide'));
+            const dots     = Array.from(progress.querySelectorAll('.progress-dot'));
+            if (!overlay || !slides.length) return;
+
+            let cur = 0;
+            const total = slides.length;
+
+            function safeGet() { try { return localStorage.getItem(STORAGE_KEY); } catch { return null; } }
+            function safeSet() { try { localStorage.setItem(STORAGE_KEY, '1'); } catch {} }
+
+            function render() {
+                slides.forEach((s, i) => s.classList.toggle('active', i === cur));
+                dots.forEach((d, i) => {
+                    d.classList.toggle('active', i === cur);
+                    d.classList.toggle('done', i < cur);
+                });
+                backBtn.disabled = cur === 0;
+                nextBtn.textContent = cur === total - 1 ? 'Поехали' : 'Далее';
+            }
+            function open() {
+                overlay.classList.add('visible');
+                document.body.style.overflow = 'hidden';
+                cur = 0; render();
+            }
+            function close() {
+                overlay.classList.remove('visible');
+                document.body.style.overflow = '';
+                safeSet();
+            }
+            function next() { if (cur < total - 1) { cur++; render(); } else close(); }
+            function back() { if (cur > 0) { cur--; render(); } }
+
+            closeBtn.addEventListener('click', close);
+            skipBtn.addEventListener('click', close);
+            backBtn.addEventListener('click', back);
+            nextBtn.addEventListener('click', next);
+            helpFab.addEventListener('click', open);
+            dots.forEach((d, i) => d.addEventListener('click', () => { cur = i; render(); }));
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+            document.addEventListener('keydown', (e) => {
+                if (!overlay.classList.contains('visible')) return;
+                if (e.key === 'Escape')      { e.preventDefault(); close(); }
+                else if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+                else if (e.key === 'ArrowLeft')  { e.preventDefault(); back(); }
+            });
+
+            if (!safeGet()) setTimeout(open, 700);
+        })();
     </script>
 </body>
 </html>

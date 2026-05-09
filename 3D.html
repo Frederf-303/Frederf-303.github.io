@@ -23,10 +23,10 @@
   --danger: #ff5555;
 }
 
-* { 
-  margin: 0; 
-  padding: 0; 
-  box-sizing: border-box; 
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 html, body {
@@ -38,11 +38,9 @@ html, body {
   color: var(--text-light);
 }
 
-/* ===== VIDEO ===== */
 #camera {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100vw;
   height: 100vh;
   object-fit: cover;
@@ -51,13 +49,6 @@ html, body {
 }
 
 #camera.mirrored { transform: scaleX(-1); }
-
-#backgroundContainer {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-}
 
 #three-canvas {
   position: fixed;
@@ -68,36 +59,32 @@ html, body {
   pointer-events: none;
 }
 
-/* ===== CURSOR ===== */
 #pinchCursor {
   position: fixed;
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(75, 227, 255, 0.95), rgba(0, 180, 255, 0.9));
-  box-shadow: 0 0 30px rgba(75, 227, 255, 0.7), 0 0 60px rgba(75, 227, 255, 0.3),
-              inset 0 0 0 2px rgba(255, 255, 255, 0.9);
+  background: radial-gradient(circle at 30% 30%, rgba(75,227,255,0.95), rgba(0,180,255,0.9));
+  box-shadow: 0 0 30px rgba(75,227,255,0.7), 0 0 60px rgba(75,227,255,0.3),
+              inset 0 0 0 2px rgba(255,255,255,0.9);
   transform: translate(-50%, -50%) scale(1);
   pointer-events: none;
   z-index: 9999;
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), 
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
               background 0.25s ease, box-shadow 0.25s ease;
   border: 1px solid rgba(255,255,255,0.2);
+  opacity: 0;
 }
 
-#pinchCursor.visible {
-  opacity: 1;
-}
+#pinchCursor.visible { opacity: 1; }
 
-/* Цвета курсора для разных режимов */
-.cursor-movexy { background: rgba(255, 2, 2, 0.4); border-color: #FF0202; box-shadow: 0 0 25px #FF0202; }
-.cursor-movez { background: rgba(238, 255, 5, 0.4); border-color: #EEFF05; box-shadow: 0 0 25px #EEFF05; }
-.cursor-rotate { background: rgba(0, 255, 33, 0.4); border-color: #00FF21; box-shadow: 0 0 25px #00FF21; }
-.cursor-scale { background: rgba(25, 0, 255, 0.4); border-color: #1900FF; box-shadow: 0 0 25px #1900FF; }
-.cursor-draw { background: rgba(255, 0, 0, 0.4); border-color: #ff0000; box-shadow: 0 0 25px #ff0000; }
-.cursor-fist { background: radial-gradient(circle, #5ddcff, #3b9eff) !important; border-color: white !important; box-shadow: 0 0 40px #5ddcff !important; }
+.cursor-movexy { background: rgba(255,2,2,0.4); border-color: #FF0202; box-shadow: 0 0 25px #FF0202; }
+.cursor-movez  { background: rgba(238,255,5,0.4); border-color: #EEFF05; box-shadow: 0 0 25px #EEFF05; }
+.cursor-rotate { background: rgba(0,255,33,0.4); border-color: #00FF21; box-shadow: 0 0 25px #00FF21; }
+.cursor-scale  { background: rgba(25,0,255,0.4); border-color: #1900FF; box-shadow: 0 0 25px #1900FF; }
+.cursor-draw   { background: rgba(255,0,0,0.4); border-color: #ff0000; box-shadow: 0 0 25px #ff0000; }
+.cursor-fist   { background: radial-gradient(circle, #5ddcff, #3b9eff) !important; border-color: white !important; box-shadow: 0 0 40px #5ddcff !important; }
 
-/* ===== TOGGLE SIDEBAR BUTTON ===== */
 #toggleSidebar {
   position: fixed;
   left: 24px;
@@ -120,35 +107,52 @@ html, body {
 }
 
 #toggleSidebar:hover {
-  background: rgba(48, 58, 80, 0.9);
+  background: rgba(48,58,80,0.9);
   border-color: var(--accent-primary);
-  box-shadow: 0 0 30px rgba(75, 227, 255, 0.3);
+  box-shadow: 0 0 30px rgba(75,227,255,0.3);
   transform: scale(1.1) rotate(5deg);
 }
 
-/* ===== ПАНЕЛИ ===== */
+/* Панели — матовое жидкое стекло (единый вид с 2D) */
 #toolsPanel, #settingsPanel {
   position: fixed;
-  left: 20px;
-  top: 80px;
+  top: 90px;
   width: 420px;
-  background: var(--glass-dark);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--glass-border);
-  border-radius: 36px;
+  /* Матовое стекло: плотный blur + лёгкая насыщенность */
+  background: linear-gradient(160deg, rgba(28, 34, 50, 0.55) 0%, rgba(14, 18, 28, 0.62) 100%);
+  backdrop-filter: blur(40px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 38px;
   z-index: 900;
   display: flex;
   flex-direction: column;
-  padding: 32px 28px;
+  padding: 67px 24px 28px;
   gap: 24px;
-  transform: translateX(-120%);
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, box-shadow 0.3s;
-  box-shadow: var(--shadow-xl);
+  /* Многослойные тени: глубина + верхний specular + нижняя теневая кромка + cyan-каёмка */
+  box-shadow:
+    0 32px 64px -16px rgba(0, 0, 0, 0.7),
+    0 12px 24px -8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(75, 227, 255, 0.06);
   opacity: 0;
   pointer-events: none;
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - 120px);
   overflow-y: auto;
   will-change: transform, opacity;
+  color: var(--text-light);
+}
+
+#toolsPanel {
+  left: 20px;
+  transform: translateX(-140%);
+}
+
+#settingsPanel {
+  right: 20px;
+  transform: translateX(140%);
 }
 
 #toolsPanel.visible, #settingsPanel.visible {
@@ -157,78 +161,179 @@ html, body {
   pointer-events: auto;
 }
 
-/* Открывать панели с разных сторон: инструменты слева, настройки справа */
-#toolsPanel { left: 20px; right: auto; }
-#settingsPanel { right: 20px; left: auto; transform: translateX(120%); }
-
+/* Индикатор внутри панели сверху по центру — как в 2D */
 .panel-indicator {
   position: absolute;
-  top: -12px;
-  left: 30px;
-  background: var(--accent-primary);
-  color: black;
-  padding: 8px 20px;
-  border-radius: 30px;
-  font-size: 14px;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(12, 16, 24, 0.85);
+  backdrop-filter: blur(10px);
+  color: var(--accent-primary);
+  padding: 6px 20px;
+  border-radius: 18px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  box-shadow: 0 0 20px var(--accent-primary);
-  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+  border: 1px solid rgba(75, 227, 255, 0.25);
   white-space: nowrap;
+  z-index: 10;
 }
 
-/* ===== СКРОЛЛ ===== */
-#toolsPanel::-webkit-scrollbar, #settingsPanel::-webkit-scrollbar { width: 5px; }
-#toolsPanel::-webkit-scrollbar-track, #settingsPanel::-webkit-scrollbar-track { background: transparent; margin-block: 20px; }
-#toolsPanel::-webkit-scrollbar-thumb, #settingsPanel::-webkit-scrollbar-thumb { background: rgba(93, 220, 255, 0.3); border-radius: 20px; }
-#toolsPanel::-webkit-scrollbar-thumb:hover, #settingsPanel::-webkit-scrollbar-thumb:hover { background: rgba(93, 220, 255, 0.7); }
+/* Чтобы первый раздел не наезжал на индикатор */
+.section:first-of-type { margin-top: 32px; }
 
-/* ===== СЕКЦИИ ===== */
+#toolsPanel::-webkit-scrollbar,
+#settingsPanel::-webkit-scrollbar { width: 5px; }
+
+#toolsPanel::-webkit-scrollbar-track,
+#settingsPanel::-webkit-scrollbar-track { background: transparent; margin-block: 20px; }
+
+#toolsPanel::-webkit-scrollbar-thumb,
+#settingsPanel::-webkit-scrollbar-thumb { background: rgba(93,220,255,0.3); border-radius: 20px; }
+
+#toolsPanel::-webkit-scrollbar-thumb:hover,
+#settingsPanel::-webkit-scrollbar-thumb:hover { background: rgba(93,220,255,0.7); }
+
 .section {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  animation: slideInSection 0.4s ease-out;
-}
-
-@keyframes slideInSection {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .section-title {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   color: #fff;
   padding-left: 6px;
   border-left: 3px solid var(--accent-primary);
   line-height: 1.2;
-  text-shadow: 0 0 10px rgba(75,227,255,0.3);
+  text-shadow: 0 0 12px rgba(75,227,255,0.4);
 }
 
+/* Прозрачные стеклянные кнопки — liquid glass */
 .btn {
-  padding: 14px 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-soft);
+  padding: 14px 14px;
   border-radius: 20px;
   cursor: pointer;
-  transition: var(--transition-smooth);
-  font-size: 14px;
-  font-weight: 500;
+  transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1),
+              background 0.3s ease, border-color 0.3s ease,
+              box-shadow 0.35s ease, color 0.3s ease;
+  font-size: 17px;
+  font-weight: 600;
   text-align: center;
   flex: 1;
-  min-height: 52px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: var(--surface-elevated);
-  border: 1px solid rgba(255,255,255,0.04);
-  color: var(--text-soft);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  backdrop-filter: blur(5px);
+  /* Тонкое стекло поверх панели */
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 6px 14px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
 }
+/* Сканирующий блик при наведении */
+.btn::before {
+  content: ''; position: absolute;
+  top: 0; left: -120%;
+  width: 100%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.18), transparent);
+  transition: left 0.65s ease;
+  pointer-events: none;
+}
+.btn:hover::before { left: 120%; }
+.btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(75,227,255,0.18), transparent 70%);
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.btn:hover::after { opacity: 1; }
+.btn:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(75, 227, 255, 0.55);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 16px 28px -8px rgba(0, 0, 0, 0.55),
+    0 0 30px rgba(75, 227, 255, 0.25);
+  color: #fff;
+}
+.btn:active {
+  transform: translateY(-1px) scale(0.97);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.1s ease;
+}
+.btn.active {
+  background: linear-gradient(160deg, rgba(75, 227, 255, 0.13) 0%, rgba(75, 227, 255, 0.03) 100%);
+  border-color: rgba(75, 227, 255, 0.65);
+  color: var(--accent-primary);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 0 32px rgba(75, 227, 255, 0.45),
+    inset 0 0 18px rgba(75, 227, 255, 0.12);
+  animation: btnActivePulse 2.6s ease-in-out infinite;
+}
+@keyframes btnActivePulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 0 32px rgba(75, 227, 255, 0.45),
+      inset 0 0 18px rgba(75, 227, 255, 0.12);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.32),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 0 48px rgba(75, 227, 255, 0.7),
+      inset 0 0 28px rgba(75, 227, 255, 0.22);
+  }
+}
+
+.btn.danger { background: rgba(255,85,85,0.15); border-color: var(--danger); color: var(--danger); }
+.btn.danger:hover { background: rgba(255,85,85,0.25); }
+
+.btn.highlighted {
+  background: rgba(93,220,255,0.3) !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 20px rgba(93,220,255,0.5), inset 0 0 0 2px rgba(255,255,255,0.5) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+}
+
+.btn-icon {
+  font-size: 20px;
+  filter: drop-shadow(0 0 6px rgba(75,227,255,0.5));
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  display: inline-block;
+}
+.btn:hover .btn-icon { transform: scale(1.18) rotate(-5deg); }
+.btn.active .btn-icon { animation: btnIconBob 2s ease-in-out infinite; }
+@keyframes btnIconBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
 .button-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -240,47 +345,6 @@ html, body {
   gap: 12px;
 }
 
-// (Old duplicate btn style removed) 
-
-.btn::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: radial-gradient(circle at 50% 50%, rgba(75,227,255,0.2), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.btn:hover::after { opacity: 1; }
-
-.btn:hover {
-  background: var(--surface-hover);
-  border-color: rgba(75, 227, 255, 0.5);
-  transform: translateY(-4px);
-  box-shadow: 0 16px 28px -8px rgba(0,0,0,0.5), 0 0 0 1px rgba(75,227,255,0.2);
-  color: white;
-}
-
-.btn.active {
-  background: linear-gradient(145deg, rgba(75,227,255,0.2), rgba(75,227,255,0.05));
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  box-shadow: 0 0 25px rgba(75,227,255,0.3), inset 0 0 15px rgba(75,227,255,0.1);
-}
-
-.btn.danger { background: rgba(255, 85, 85, 0.15); border-color: var(--danger); color: var(--danger); }
-.btn.danger:hover { background: rgba(255, 85, 85, 0.25); }
-
-.btn.highlighted {
-  background: rgba(93, 220, 255, 0.3) !important;
-  border-color: var(--accent-primary) !important;
-  box-shadow: 0 0 20px rgba(93, 220, 255, 0.5), inset 0 0 0 2px rgba(255, 255, 255, 0.5) !important;
-  transform: translateY(-2px) scale(1.05) !important;
-}
-
-.btn-icon { font-size: 20px; filter: drop-shadow(0 0 6px rgba(75,227,255,0.4)); }
-
-/* ===== ЦВЕТОВАЯ ПАЛИТРА ===== */
 .color-palette {
   display: flex;
   gap: 12px;
@@ -289,21 +353,51 @@ html, body {
 }
 
 .color-swatch {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
+  width: 48px; height: 48px;
+  border-radius: 14px;
   cursor: pointer;
-  border: 2px solid rgba(255,255,255,0.2);
-  transition: var(--transition-smooth);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+              border-color 0.25s, box-shadow 0.3s;
   position: relative;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  pointer-events: auto !important;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 6px 16px rgba(0, 0, 0, 0.4);
+}
+.color-swatch:hover {
+  transform: scale(1.18) rotate(8deg);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 25px var(--accent-primary);
+}
+.color-swatch:active { transform: scale(1.05) rotate(-4deg); transition: transform 0.1s; }
+.color-swatch.active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 30px var(--accent-primary);
+  transform: scale(1.12);
+  animation: swatchActivePulse 2.4s ease-in-out infinite;
+}
+@keyframes swatchActivePulse {
+  0%, 100% { box-shadow: 0 0 25px var(--accent-primary); }
+  50%      { box-shadow: 0 0 40px var(--accent-primary), 0 0 60px rgba(75,227,255,0.4); }
+}
+.color-swatch.active::after {
+  content: '✓';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  color: white;
+  font-size: 22px;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(0,0,0,0.6);
+  animation: swatchCheckPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes swatchCheckPop {
+  0%   { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
 }
 
-.color-swatch:hover { transform: scale(1.15); border-color: var(--accent-primary); box-shadow: 0 0 25px var(--accent-primary); }
-.color-swatch.active { border-color: var(--accent-primary); box-shadow: 0 0 30px var(--accent-primary); transform: scale(1.1); }
-
-/* ===== COLOR PICKER ===== */
 .color-picker {
   width: 100%;
   height: 52px;
@@ -322,7 +416,6 @@ html, body {
 .color-picker::-webkit-color-swatch { border: none; border-radius: 16px; min-height: 44px; }
 .color-picker.highlighted { box-shadow: 0 0 0 3px var(--accent-primary) !important; }
 
-/* ===== СЛАЙДЕРЫ ===== */
 .slider-container { position: relative; margin-top: 6px; }
 
 .slider-label {
@@ -348,30 +441,58 @@ html, body {
   width: 100%;
   height: 8px;
   border-radius: 10px;
-  background: rgba(30, 35, 48, 0.8);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   outline: none;
   -webkit-appearance: none;
   appearance: none;
-  box-shadow: inset 0 1px 8px rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: box-shadow 0.3s ease;
 }
-
+.slider:hover { box-shadow: inset 0 1px 8px rgba(0,0,0,0.6), 0 0 14px rgba(75,227,255,0.25); }
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 24px;
-  height: 24px;
+  width: 26px; height: 26px;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--accent-primary), #1aabff);
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 45%),
+    radial-gradient(circle at 30% 30%, var(--accent-primary), #1aabff 100%);
   cursor: pointer;
-  border: 2px solid white;
-  box-shadow: 0 2px 15px var(--accent-primary);
-  transition: var(--transition-smooth);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 2px 12px var(--accent-primary),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+}
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 25px var(--accent-primary), 0 0 40px rgba(75,227,255,0.5);
+}
+.slider::-webkit-slider-thumb:active { transform: scale(1.15); }
+.slider::-moz-range-thumb {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 45%),
+    radial-gradient(circle at 30% 30%, var(--accent-primary), #1aabff 100%);
+  cursor: pointer;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 12px var(--accent-primary),
+              inset 0 1px 0 rgba(255, 255, 255, 0.7),
+              inset 0 -2px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+}
+.slider::-moz-range-thumb:hover { transform: scale(1.3); box-shadow: 0 0 25px var(--accent-primary); }
+.slider.highlighted::-webkit-slider-thumb { box-shadow: 0 0 15px rgba(93,220,255,0.8) !important; transform: scale(1.3); }
+.slider-value { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.25s; }
+.slider-container:hover .slider-value {
+  transform: scale(1.08);
+  background: rgba(75,227,255,0.3);
 }
 
-.slider::-webkit-slider-thumb:hover { transform: scale(1.25); box-shadow: 0 0 25px var(--accent-primary); }
-.slider.highlighted::-webkit-slider-thumb { box-shadow: 0 0 15px rgba(93, 220, 255, 0.8) !important; transform: scale(1.3); }
-
-/* ===== ТОГГЛ ===== */
 .toggle-group {
   display: flex;
   align-items: center;
@@ -382,38 +503,55 @@ html, body {
   border: 1px solid rgba(255,255,255,0.05);
 }
 
-.toggle-label { font-size: 14px; font-weight: 500; color: var(--text-soft); }
+.toggle-label { font-size: 15px; font-weight: 600; color: var(--text-soft); }
 
 .toggle-btn {
   position: relative;
-  width: 54px;
-  height: 28px;
-  background: rgba(40, 45, 60, 0.9);
-  border: 1px solid rgba(255,255,255,0.1);
+  width: 58px; height: 32px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 34px;
   cursor: pointer;
-  transition: var(--transition-smooth);
-  box-shadow: inset 0 1px 5px rgba(0,0,0,0.5);
+  transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5),
+              inset 0 -1px 0 rgba(255, 255, 255, 0.05);
 }
-
 .toggle-btn::after {
   content: '';
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 22px;
-  height: 22px;
-  background: white;
+  top: 3px; left: 3px;
+  width: 24px; height: 24px;
   border-radius: 50%;
-  transition: var(--transition-smooth);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(160deg, #ffffff, #d8e2ee);
+  transition: left 0.35s cubic-bezier(0.68,-0.4,0.27,1.4),
+              box-shadow 0.35s ease,
+              background 0.35s ease;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.15);
+}
+.toggle-btn:hover { box-shadow: inset 0 1px 5px rgba(0,0,0,0.5), 0 0 12px rgba(75,227,255,0.25); }
+.toggle-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 18px rgba(75,227,255,0.5), inset 0 1px 5px rgba(0,0,0,0.3);
+}
+.toggle-btn.active::after {
+  left: calc(100% - 27px);
+  box-shadow:
+    0 0 18px white,
+    0 2px 10px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(160deg, #ffffff, #d8e2ee);
 }
 
-.toggle-btn.active { background: var(--accent-primary); border-color: var(--accent-primary); }
-.toggle-btn.active::after { left: calc(100% - 24px); background: white; box-shadow: 0 0 15px white; }
-.switch.highlighted .slider { box-shadow: 0 0 10px var(--accent-primary) !important; }
-
-/* ===== РЕЖИМЫ ВВЕРХУ ===== */
 .mode-zones {
   position: fixed;
   top: 24px;
@@ -422,6 +560,15 @@ html, body {
   display: flex;
   gap: 16px;
   z-index: 850;
+  align-items: center;
+}
+
+/* 🔳 Прозрачный спейсер для размещения hotZoneBottom между группами зон режимов */
+.mode-zones-spacer {
+  width: 440px;
+  flex-shrink: 0;
+  height: 1px;
+  pointer-events: none;
 }
 
 .mode-zone {
@@ -437,8 +584,8 @@ html, body {
   cursor: pointer;
 }
 
-.mode-zone.active { background: rgba(255, 255, 255, 0.25); box-shadow: 0 0 25px currentColor, inset 0 0 15px rgba(255,255,255,0.1); }
-.mode-zone:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.08); }
+.mode-zone.active { background: rgba(255,255,255,0.25); box-shadow: 0 0 25px currentColor, inset 0 0 15px rgba(255,255,255,0.1); }
+.mode-zone:hover { background: rgba(255,255,255,0.2); transform: scale(1.08); }
 
 .mode-indicator {
   font-size: 22px;
@@ -454,32 +601,31 @@ html, body {
   text-transform: uppercase;
   letter-spacing: 1px;
   opacity: 0.9;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-.zone-movexy { color: #FF0202; background: rgba(255, 2, 2, 0.2); border: 2px solid rgba(255, 2, 2, 0.4); }
-.zone-movez { color: #EEFF05; background: rgba(238, 255, 5, 0.2); border: 2px solid rgba(238, 255, 5, 0.4); }
-.zone-rotate { color: #00FF21; background: rgba(0, 255, 33, 0.2); border: 2px solid rgba(0, 255, 33, 0.4); }
-.zone-scale { color: #1900FF; background: rgba(25, 0, 255, 0.2); border: 2px solid rgba(25, 0, 255, 0.4); }
+.zone-movexy { color: #FF0202; background: rgba(255,2,2,0.2); border: 2px solid rgba(255,2,2,0.4); }
+.zone-movez  { color: #EEFF05; background: rgba(238,255,5,0.2); border: 2px solid rgba(238,255,5,0.4); }
+.zone-rotate { color: #00FF21; background: rgba(0,255,33,0.2); border: 2px solid rgba(0,255,33,0.4); }
+.zone-scale  { color: #1900FF; background: rgba(25,0,255,0.2); border: 2px solid rgba(25,0,255,0.4); }
 
 .zone-button {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  inset: 0;
   background: transparent;
   border: none;
   cursor: pointer;
   z-index: 1;
 }
 
-/* ===== СТАТУС БАР ===== */
 #statusBar {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(12, 16, 22, 0.7);
+  background: rgba(12,16,22,0.7);
   backdrop-filter: blur(20px) saturate(200%);
-  border: 1px solid rgba(75, 227, 255, 0.2);
+  border: 1px solid rgba(75,227,255,0.2);
   border-radius: 60px;
   padding: 12px 28px;
   color: white;
@@ -501,19 +647,18 @@ html, body {
   box-shadow: 0 0 15px var(--accent-primary);
 }
 
-.status-dot.recording { animation: pulseGlow 1.8s infinite; }
-
 @keyframes pulseGlow {
   0%, 100% { opacity: 1; box-shadow: 0 0 15px var(--accent-primary); }
   50% { opacity: 0.6; box-shadow: 0 0 30px var(--accent-primary); }
 }
 
-/* ===== ИНДИКАТОР РЕЖИМА ===== */
+.status-dot.recording { animation: pulseGlow 1.8s infinite; }
+
 #modeIndicator {
   position: fixed;
   top: 24px;
   right: 24px;
-  background: rgba(18, 25, 40, 0.8);
+  background: rgba(18,25,40,0.8);
   backdrop-filter: blur(16px);
   padding: 12px 24px;
   border-radius: 40px;
@@ -538,13 +683,12 @@ html, body {
 
 .mode-text { letter-spacing: 1px; }
 
-/* ===== HOVER INDICATOR ===== */
 #hoverIndicator {
   position: fixed;
   bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(75, 227, 255, 0.2);
+  background: rgba(75,227,255,0.2);
   backdrop-filter: blur(20px);
   padding: 10px 24px;
   border-radius: 60px;
@@ -559,28 +703,27 @@ html, body {
   white-space: nowrap;
 }
 
-/* ===== CLICK FEEDBACK ===== */
+@keyframes clickFeedback {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
 .click-feedback {
   position: fixed;
   pointer-events: none;
   z-index: 10000;
   border-radius: 50%;
+  width: 50px;
+  height: 50px;
   background: radial-gradient(circle, rgba(75,227,255,0.7) 0%, transparent 70%);
   animation: clickFeedback 0.4s ease-out forwards;
 }
 
-@keyframes clickFeedback {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.9; }
-  100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
-}
-
-/* ===== СПИСОК ОБЪЕКТОВ ===== */
 .objects-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 300px;
-  overflow-y: auto;
+  /* Без max-height и overflow — список растёт естественно, без ползунка */
 }
 
 .object-item {
@@ -588,20 +731,20 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: 12px 15px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 16px;
   cursor: pointer;
   transition: var(--transition-smooth);
 }
 
-.object-item:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(5px); }
-.object-item.active { background: rgba(93, 220, 255, 0.15); border-color: var(--accent-primary); }
-.object-item.highlighted { background: rgba(93, 220, 255, 0.25) !important; border-color: var(--accent-primary) !important; box-shadow: 0 0 15px rgba(93, 220, 255, 0.4) !important; }
+.object-item:hover { background: rgba(255,255,255,0.1); transform: translateX(5px); }
+.object-item.active { background: rgba(93,220,255,0.15); border-color: var(--accent-primary); }
+.object-item.highlighted { background: rgba(93,220,255,0.25) !important; border-color: var(--accent-primary) !important; box-shadow: 0 0 15px rgba(93,220,255,0.4) !important; }
 
 .object-color { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 .object-name { flex: 1; font-size: 14px; font-weight: 500; }
-.object-type { font-size: 12px; color: var(--text-soft); background: rgba(255, 255, 255, 0.1); padding: 2px 8px; border-radius: 10px; }
+.object-type { font-size: 12px; color: var(--text-soft); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; }
 
 .delete-object {
   background: none;
@@ -611,6 +754,7 @@ html, body {
   cursor: pointer;
   padding: 0 5px;
   transition: var(--transition-smooth);
+  line-height: 1;
 }
 
 .delete-object:hover { color: var(--danger); transform: scale(1.2); }
@@ -626,16 +770,108 @@ html, body {
   margin-left: 8px;
 }
 
-.hidden { display: none !important; }
+/* ── HOT ZONES (логика как в 2D) ── */
+.hot-zone {
+  position: fixed; z-index: 700; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, rgba(75,227,255,0.04), rgba(75,227,255,0.02));
+  border: 1px solid rgba(75,227,255,0.15);
+  transition: background 0.3s, border-color 0.3s, opacity 0.4s;
+}
+.hot-zone.hovered {
+  background: linear-gradient(135deg, rgba(75,227,255,0.16), rgba(75,227,255,0.08));
+  border-color: rgba(75,227,255,0.45);
+}
+.hz-hint {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  opacity: 0.25; transition: opacity 0.3s; pointer-events: none; user-select: none;
+}
+.hot-zone.hovered .hz-hint { opacity: 0.9; }
+.hz-hint span {
+  font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--accent-primary); white-space: nowrap;
+  text-shadow: 0 0 8px rgba(75,227,255,0.5);
+}
+.hz-dots { display: flex; gap: 6px; }
+.hz-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-primary); opacity: 0.6; }
 
+#hotZoneBottom {
+  top: 0; bottom: auto; left: 50%; transform: translateX(-50%);
+  width: 420px; height: 75px;
+  border-radius: 0 0 48px 48px; border-top: none;
+}
+
+#hotZoneCenter {
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 420px; height: 420px;
+  border-radius: 44px; opacity: 0;
+  transition: opacity 0.45s cubic-bezier(0.16,1,0.3,1), background 0.3s, border-color 0.3s;
+}
+#hotZoneCenter.panels-open { opacity: 1; }
+.hz-close-icon {
+  font-size: 32px; opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  filter: drop-shadow(0 0 10px var(--accent-primary));
+  transform: scale(0.85);
+}
+#hotZoneCenter.hovered .hz-close-icon { opacity: 1; transform: scale(1.1); }
+
+/* 🔵 Кольцо удержания */
+#holdRing {
+  position: fixed; width: 72px; height: 72px; border-radius: 50%;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%) scale(0.8); opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+}
+#holdRing.active { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+#holdRing.complete { animation: ringPop 0.35s cubic-bezier(0.2,0.8,0.2,1) forwards; }
+@keyframes ringPop {
+  0%   { transform: translate(-50%,-50%) scale(1); }
+  40%  { transform: translate(-50%,-50%) scale(1.35); }
+  100% { transform: translate(-50%,-50%) scale(0.7); opacity: 0; }
+}
+#holdRing svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+#holdRing circle.track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 5; }
+#holdRing circle.progress {
+  fill: none; stroke: var(--accent-primary); stroke-width: 5; stroke-linecap: round;
+  stroke-dasharray: 200; stroke-dashoffset: 200;
+  filter: drop-shadow(0 0 10px var(--accent-primary));
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
 
 <video id="camera" autoplay playsinline muted></video>
-<div id="backgroundContainer"></div>
 <canvas id="three-canvas"></canvas>
+<canvas id="skeletonCanvas" style="position:fixed;inset:0;width:100vw;height:100vh;z-index:6;pointer-events:none;transition:opacity 0.3s;"></canvas>
 <div id="pinchCursor"></div>
+
+<!-- 🔵 Кольцо удержания (как в 2D) -->
+<div id="holdRing">
+  <svg viewBox="0 0 64 64">
+    <circle class="track" cx="32" cy="32" r="28"/>
+    <circle class="progress" cx="32" cy="32" r="28" id="holdRingProgress"/>
+  </svg>
+</div>
+
+<!-- 🔺 Зона удержания сверху по центру: открыть панели -->
+<div class="hot-zone" id="hotZoneBottom">
+  <div class="hz-hint">
+    <div class="hz-dots"><div class="hz-dot"></div><div class="hz-dot"></div><div class="hz-dot"></div></div>
+    <span>удержать — открыть панели</span>
+  </div>
+</div>
+
+<!-- 🔲 Зона удержания в центре: закрыть панели (видна, когда панели открыты) -->
+<div class="hot-zone" id="hotZoneCenter">
+  <div class="hz-hint">
+    <div class="hz-close-icon">✕</div>
+    <span>удержать — закрыть</span>
+  </div>
+</div>
 
 <div id="modeIndicator">
   <div class="mode-icon" id="modeIcon"></div>
@@ -648,167 +884,136 @@ html, body {
   <span class="btn-icon">⚡</span>
 </button>
 
-<div class="panels-container">
-  <!-- ПАНЕЛЬ ИНСТРУМЕНТОВ -->
-  <div id="toolsPanel">
-    <div class="panel-indicator">🖌️ ПАНЕЛЬ ИНСТРУМЕНТОВ</div>
-    
-    <div class="section">
-      <div class="section-title">Фигуры</div>
-      <div class="button-grid">
-        <button class="btn" onclick="addShape('cube')" id="tool-cube">
-          <span class="btn-icon">📦</span>Куб
-        </button>
-        <button class="btn" onclick="addShape('sphere')" id="tool-sphere">
-          <span class="btn-icon">⚪</span>Сфера
-        </button>
-        <button class="btn" onclick="addShape('cylinder')" id="tool-cylinder">
-          <span class="btn-icon">🔘</span>Цилиндр
-        </button>
-        <button class="btn" onclick="addShape('pyramid')" id="tool-pyramid">
-          <span class="btn-icon">🔺</span>Пирамида
-        </button>
-        <button class="btn" onclick="startDrawing()" id="tool-draw">
-          <span class="btn-icon">✏️</span>Кисть 3D
-        </button>
-        <button class="btn" onclick="activateFreeMove()" id="tool-free-move">
-          <span class="btn-icon">🧭</span>Свободное перемещение
-        </button>
-      </div>
-    </div>
+<div id="toolsPanel">
+  <div class="panel-indicator">🖌️ ПАНЕЛЬ ИНСТРУМЕНТОВ</div>
 
-    <div class="section">
-      <div class="section-title">Цвет объекта</div>
-      <input type="color" id="brushColorPicker" class="color-picker" value="#ff0000">
-      <div class="color-palette" id="colorPalette">
-        <div class="color-swatch active" style="background: #ff0000;" data-color="#ff0000"></div>
-        <div class="color-swatch" style="background: #ffff00;" data-color="#ffff00"></div>
-        <div class="color-swatch" style="background: #00ff00;" data-color="#00ff00"></div>
-        <div class="color-swatch" style="background: #0000ff;" data-color="#0000ff"></div>
-        <div class="color-swatch" style="background: #ffffff;" data-color="#ffffff"></div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Объекты <span id="objectsCount" class="objects-counter">0</span></div>
-      <div class="objects-list" id="objectsList"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Действия</div>
-      <div class="button-row">
-        <button class="btn" onclick="deleteActive()">
-          <span class="btn-icon">🗑️</span>Удалить
-        </button>
-        <button class="btn danger" onclick="clearScene()">
-          <span class="btn-icon">⚠️</span>Очистить
-        </button>
-      </div>
+  <div class="section">
+    <div class="section-title">Фигуры</div>
+    <div class="button-grid">
+      <button class="btn" id="tool-cube" onclick="addShape('cube')"><span class="btn-icon">📦</span>Куб</button>
+      <button class="btn" id="tool-sphere" onclick="addShape('sphere')"><span class="btn-icon">⚪</span>Сфера</button>
+      <button class="btn" id="tool-cylinder" onclick="addShape('cylinder')"><span class="btn-icon">🔘</span>Цилиндр</button>
+      <button class="btn" id="tool-pyramid" onclick="addShape('pyramid')"><span class="btn-icon">🔺</span>Пирамида</button>
+      <button class="btn" id="tool-draw" onclick="startDrawing()"><span class="btn-icon">✏️</span>Кисть 3D</button>
+      <button class="btn" id="tool-free-move" onclick="activateFreeMove()"><span class="btn-icon">🧭</span>Свободное перемещение</button>
     </div>
   </div>
 
-  <!-- ПАНЕЛЬ НАСТРОЕК -->
-  <div id="settingsPanel">
-    <div class="panel-indicator">⚙️ ПАНЕЛЬ НАСТРОЕК</div>
-    
-    <div class="section">
-      <div class="section-title">Камера</div>
-      <div class="button-row">
-        <button class="btn" onclick="toggleCameraMirror()" id="btn-mirror">
-          <span class="btn-icon">🔄</span>Зеркало
-        </button>
-        <button class="btn active" onclick="toggleCamera()" id="btn-camera">
-          <span class="btn-icon">📷</span>Вкл.
-        </button>
-      </div>
+  <div class="section">
+    <div class="section-title">Цвет объекта</div>
+    <input type="color" id="brushColorPicker" class="color-picker" value="#ff0000">
+    <div class="color-palette" id="colorPalette">
+      <div class="color-swatch active" style="background:#ff0000" data-color="#ff0000"></div>
+      <div class="color-swatch" style="background:#ffff00" data-color="#ffff00"></div>
+      <div class="color-swatch" style="background:#00ff00" data-color="#00ff00"></div>
+      <div class="color-swatch" style="background:#0000ff" data-color="#0000ff"></div>
+      <div class="color-swatch" style="background:#ffffff" data-color="#ffffff"></div>
     </div>
+  </div>
 
-    <div class="section">
-      <div class="section-title">Фон</div>
-      <div class="toggle-group">
-        <span class="toggle-label">Цветной фон</span>
-        <div class="toggle-btn" id="bgToggleBtn" onclick="toggleBackground()"></div>
-      </div>
-      <div id="colorControls" style="margin-top: 10px;">
-        <div class="slider-label">Цвет фона</div>
-        <input type="color" id="bgColorPicker" class="color-picker" value="#0b0b10">
-      </div>
-    </div>
+  <div class="section">
+    <div class="section-title">Объекты <span id="objectsCount" class="objects-counter">0</span></div>
+    <div class="objects-list" id="objectsList"></div>
+  </div>
 
-    <div class="section">
-      <div class="section-title">Сглаживание</div>
-      <div class="slider-container">
-        <div class="slider-label">
-          <span>Уровень</span>
-          <span class="slider-value" id="smoothnessValue">0.4</span>
-        </div>
-        <input type="range" id="smoothnessPicker" class="slider" min="0.1" max="0.9" step="0.05" value="0.4">
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Толщина кисти</div>
-      <div class="slider-container">
-        <div class="slider-label">
-          <span>Размер</span>
-          <span class="slider-value" id="brushWidthValue">0.20</span>
-        </div>
-        <input type="range" id="brushWidthPicker" class="slider" min="0.05" max="1.0" step="0.05" value="0.2">
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Экспорт</div>
-      <div class="button-grid">
-        <button class="btn" onclick="saveTransparent()">
-          <span class="btn-icon">🖼️</span>PNG прозр.
-        </button>
-        <button class="btn" onclick="saveWithBackground()">
-          <span class="btn-icon">🏞️</span>PNG+фон
-        </button>
-        <button class="btn" onclick="saveWithColorBg()">
-          <span class="btn-icon">🎨</span>PNG цвет
-        </button>
-        <button class="btn" onclick="loadBackgroundImage()">
-          <span class="btn-icon">📁</span>Загр. фон
-        </button>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Навигация</div>
-      <div class="button-row">
-        <button class="btn" onclick="location.href='index.html'">
-          <span class="btn-icon">🏠</span>Главная
-        </button>
-        <button class="btn" onclick="location.href='2D.html'">
-          <span class="btn-icon">✏️</span>2D
-        </button>
-      </div>
+  <div class="section">
+    <div class="section-title">Действия</div>
+    <div class="button-row">
+      <button class="btn" onclick="deleteActive()"><span class="btn-icon">🗑️</span>Удалить</button>
+      <button class="btn danger" onclick="clearScene()"><span class="btn-icon">⚠️</span>Очистить</button>
     </div>
   </div>
 </div>
 
-<!-- Зоны режимов вверху -->
+<div id="settingsPanel">
+  <div class="panel-indicator">⚙️ ПАНЕЛЬ НАСТРОЕК</div>
+
+  <div class="section">
+    <div class="section-title">Камера</div>
+    <div class="button-row">
+      <button class="btn" id="btn-mirror" onclick="toggleCameraMirror()"><span class="btn-icon">🔄</span>Зеркало</button>
+      <button class="btn active" id="btn-camera" onclick="toggleCamera()"><span class="btn-icon">📷</span>Вкл.</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Отображение рук</div>
+    <div class="button-grid">
+      <button class="btn active" id="skeletonPanelBtn"><span class="btn-icon">🖐️</span>Скрыть</button>
+      <button class="btn active" id="meshModeBtn"><span class="btn-icon">🫧</span>3D вкл</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Фон</div>
+    <div class="toggle-group">
+      <span class="toggle-label">Цветной фон</span>
+      <div class="toggle-btn" id="bgToggleBtn" onclick="toggleBackground()"></div>
+    </div>
+    <div id="colorControls" style="margin-top:10px">
+      <div class="slider-label">Цвет фона</div>
+      <input type="color" id="bgColorPicker" class="color-picker" value="#0b0b10">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Сглаживание</div>
+    <div class="slider-container">
+      <div class="slider-label">
+        <span>Уровень</span>
+        <span class="slider-value" id="smoothnessValue">0.4</span>
+      </div>
+      <input type="range" id="smoothnessPicker" class="slider" min="0.1" max="0.9" step="0.05" value="0.4">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Толщина кисти</div>
+    <div class="slider-container">
+      <div class="slider-label">
+        <span>Размер</span>
+        <span class="slider-value" id="brushWidthValue">0.20</span>
+      </div>
+      <input type="range" id="brushWidthPicker" class="slider" min="0.05" max="1.0" step="0.05" value="0.2">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Экспорт</div>
+    <div class="button-grid">
+      <button class="btn" onclick="saveTransparent()"><span class="btn-icon">🖼️</span>PNG прозр.</button>
+      <button class="btn" onclick="saveWithBackground()"><span class="btn-icon">🏞️</span>PNG+фон</button>
+      <button class="btn" onclick="saveWithColorBg()"><span class="btn-icon">🎨</span>PNG цвет</button>
+      <button class="btn" onclick="loadBackgroundImage()"><span class="btn-icon">📁</span>Загр. фон</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Навигация</div>
+    <div class="button-row">
+      <button class="btn" onclick="location.href='index.html'"><span class="btn-icon">🏠</span>Главная</button>
+      <button class="btn" onclick="location.href='2D.html'"><span class="btn-icon">✏️</span>2D</button>
+    </div>
+  </div>
+</div>
+
 <div class="mode-zones">
   <div class="mode-zone zone-movexy" id="zoneMoveXY">
     <button class="zone-button" onclick="setMode('movexy')"></button>
     <div class="mode-indicator">📍</div>
     <div class="mode-label">XY</div>
   </div>
-  
   <div class="mode-zone zone-movez" id="zoneMoveZ">
     <button class="zone-button" onclick="setMode('movez')"></button>
     <div class="mode-indicator">📏</div>
     <div class="mode-label">Глубина</div>
   </div>
-  
+  <div class="mode-zones-spacer"></div>
   <div class="mode-zone zone-rotate active" id="zoneRotate">
     <button class="zone-button" onclick="setMode('rotate')"></button>
     <div class="mode-indicator">↻</div>
     <div class="mode-label">Крутить</div>
   </div>
-  
   <div class="mode-zone zone-scale" id="zoneScale">
     <button class="zone-button" onclick="setMode('scale')"></button>
     <div class="mode-indicator">⇅</div>
@@ -816,7 +1021,6 @@ html, body {
   </div>
 </div>
 
-<!-- STATUS BAR -->
 <div id="statusBar">
   <div class="status-item">
     <div class="status-dot recording"></div>
@@ -827,1158 +1031,955 @@ html, body {
   </div>
 </div>
 
-
 <script type="module" defer>
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
 import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8";
 
-/* ИНИЦИАЛИЗАЦИЯ */
-const video = document.getElementById("camera");
-const pinchCursor = document.getElementById("pinchCursor");
-const toolsPanel = document.getElementById("toolsPanel");
-const settingsPanel = document.getElementById("settingsPanel");
-const toggleSidebar = document.getElementById("toggleSidebar");
-const modeText = document.getElementById("modeText");
-const modeIcon = document.getElementById("modeIcon");
+/* ── DOM-кэш ── */
+const video          = document.getElementById("camera");
+const pinchCursor    = document.getElementById("pinchCursor");
+const toolsPanel     = document.getElementById("toolsPanel");
+const settingsPanel  = document.getElementById("settingsPanel");
+const toggleSidebar  = document.getElementById("toggleSidebar");
+const modeText       = document.getElementById("modeText");
 const hoverIndicator = document.getElementById("hoverIndicator");
+const brushColorPicker  = document.getElementById("brushColorPicker");
+const objectsList    = document.getElementById("objectsList");
+const objectsCount   = document.getElementById("objectsCount");
+const currentModeDisplay = document.getElementById("currentModeDisplay");
+const colorSwatches  = document.querySelectorAll(".color-swatch");
+const skeletonCanvas = document.getElementById("skeletonCanvas");
+const sCtx           = skeletonCanvas.getContext("2d");
+const skeletonPanelBtn = document.getElementById("skeletonPanelBtn");
+const meshModeBtn    = document.getElementById("meshModeBtn");
 
-let videoStream = null;
-let cameraEnabled = true;
-let cameraMirrored = false;
+/* ── Hot-zone DOM-refs (логика как в 2D) ── */
+const holdRing       = document.getElementById("holdRing");
+const holdRingProg   = document.getElementById("holdRingProgress");
+const hotZoneBottom  = document.getElementById("hotZoneBottom");
+const hotZoneCenter  = document.getElementById("hotZoneCenter");
+
+/* ── Скелет рук ── */
+let showSkeleton = true;
+let showMesh     = true;
+
+/* ── Состояние ── */
+let videoReady       = false;
+let cameraEnabled    = true;
+let cameraMirrored   = false;
 let isBackgroundEnabled = false;
-let bgColor = "#0b0b10";
+let bgColor          = "#0b0b10";
+let customBackground = null;
 
-let currentMode = 'rotate';
-let isFistDetected = false;
-let panelsVisible = false;
-let activePanel = null;
+let currentMode      = "rotate";
+let isFistDetected   = false;
+let panelsVisible    = false;
+let activePanel      = null;
 
-/* Настройки кисти */
-let clickDetectionState = {
-  enabled: false,
-  active: false,
-  startTime: 0,
-  element: null,
-  lastElement: null,
-  clickThreshold: 500,
-  minPinchTime: 100
+const brushSettings = { color: "#ff0000", width: 0.2 };
+
+const smoothing = {
+  factor: 0.4,
+  pos: new THREE.Vector3(),
+  cursor: { x: 0.5, y: 0.5 }
 };
 
-/* Инициализация камеры */
-async function initCamera() {
-  try {
-    if (!video) {
-      console.error("Video element not found");
-      return;
-    }
-    
-    videoStream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        facingMode: 'user',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      } 
-    });
-    video.srcObject = videoStream;
-    
-    await new Promise((resolve, reject) => {
-      video.onloadedmetadata = () => {
-        video.play().then(() => {
-          cameraEnabled = true;
-          resolve();
-        }).catch(err => {
-          console.warn('Автовоспроизведение заблокировано:', err);
-          resolve();
-        });
-      };
-      video.onerror = reject;
-    });
-  } catch (err) {
-    console.error("Ошибка доступа к камере:", err);
-    cameraEnabled = false;
-    if (video) video.style.display = 'none';
-  }
-}
+/* Переиспользуемый объект — без аллокации каждый кадр */
+const _cursorResult = { x: 0, y: 0 };
 
-/* THREE.JS СЦЕНА */
+const clickState = {
+  enabled:   false,
+  active:    false,
+  startTime: 0,
+  element:   null,
+  lastEl:    null,
+  threshold: 500,
+  minTime:   100
+};
+
+/* ── THREE.JS ── */
 const scene = new THREE.Scene();
-scene.background = null; // Прозрачный для показа видео
+scene.background = null;
 
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.z = 4;
+const camera3d = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
+camera3d.position.z = 4;
 
-const renderer = new THREE.WebGLRenderer({ 
-  alpha: true,
-  antialias: true, 
-  preserveDrawingBuffer: true 
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+Object.assign(renderer.domElement.style, {
+  position: "fixed", top: "0", left: "0",
+  width: "100vw", height: "100vh",
+  zIndex: "5", pointerEvents: "none"
 });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.domElement.style.position = "fixed";
-renderer.domElement.style.top = "0";
-renderer.domElement.style.left = "0";
-renderer.domElement.style.width = "100vw";
-renderer.domElement.style.height = "100vh";
-renderer.domElement.style.zIndex = "5";
-renderer.domElement.style.pointerEvents = "none";
 document.body.appendChild(renderer.domElement);
 
 /* Освещение */
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-
 const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
 mainLight.position.set(2, 3, 5);
 scene.add(mainLight);
-
 const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
 backLight.position.set(-2, -1, -3);
 scene.add(backLight);
 
-/* СОСТОЯНИЕ ПРИЛОЖЕНИЯ */
-let objects = [];
+/* ── Объекты сцены ── */
+let objects      = [];
 let activeObject = null;
-let isDrawing = false;
-let currentTube = null;
-let tubePoints = [];
+let isDrawing    = false;
+let currentTube  = null;
+let tubePoints   = [];
 
-/* Настройки кисти */
-const brushSettings = {
-  color: "#ff0000",
-  width: 0.2
-};
-
-/* Настройки сглаживания */
-const smoothingSettings = {
-  positionSmoothness: 0.4,
-  smoothedPosition: new THREE.Vector3(0, 0, 0),
-  smoothedCursor: { x: 0.5, y: 0.5 } // Начинаем с центра экрана
-};
-
-/* Цветной фон */
-let useColorBackground = false;
-let customBackground = null;
-
-/* Зоны режимов */
+/* ── Зоны режимов ── */
 const modeZones = {};
 
-/* Функция экспоненциального сглаживания с ускорением */
-function exponentialSmoothingFast(current, previous, alpha) {
-  return previous * (1 - alpha) + current * (alpha);
+/* ── Кэш имён типов и режимов ── */
+const TYPE_NAMES = {
+  cube: "Куб", sphere: "Сфера",
+  cylinder: "Цилиндр", pyramid: "Пирамида", tube: "Линия"
+};
+
+const MODE_NAMES = {
+  movexy: "Двигать XY", movez: "Двигать Z",
+  rotate: "Крутить", scale: "Размер", draw: "Рисование"
+};
+
+function getTypeName(t) { return TYPE_NAMES[t] || t; }
+function getModeName(m) { return MODE_NAMES[m] || m; }
+
+/* ── Вспомогательные функции ── */
+
+/** Экспоненциальное сглаживание */
+function lerp(curr, prev, a) { return prev * (1 - a) + curr * a; }
+
+/** Квадрат расстояния — без sqrt (для сравнения) */
+function distSq(a, b) {
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return dx * dx + dy * dy;
 }
 
-/* Создание 3D-трубки */
+/** Сглаженная позиция курсора (переиспользуем объект) */
+function getSmoothedCursor(rx, ry) {
+  const a = 0.8;
+  smoothing.cursor.x = lerp(rx, smoothing.cursor.x, a);
+  smoothing.cursor.y = lerp(ry, smoothing.cursor.y, a);
+  _cursorResult.x = smoothing.cursor.x;
+  _cursorResult.y = smoothing.cursor.y;
+  return _cursorResult;
+}
+
+/* ── Камера ── */
+async function initCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+    video.srcObject = stream;
+    await new Promise((res, rej) => {
+      video.onloadedmetadata = () => video.play().then(res).catch(res);
+      video.onerror = rej;
+    });
+    cameraEnabled = true;
+  } catch (err) {
+    console.error("Ошибка камеры:", err);
+    cameraEnabled = false;
+    video.style.display = "none";
+  }
+}
+
+/* ── THREE: геометрии ── */
+function createMesh(type, color) {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.1 });
+  const geo = {
+    cube:     () => new THREE.BoxGeometry(0.8, 0.8, 0.8),
+    sphere:   () => new THREE.SphereGeometry(0.5, 32, 32),
+    cylinder: () => new THREE.CylinderGeometry(0.4, 0.4, 0.8, 32),
+    pyramid:  () => new THREE.ConeGeometry(0.5, 0.9, 4)
+  }[type];
+  return geo ? new THREE.Mesh(geo(), mat) : null;
+}
+
 function createTubeFromPoints(points, color, width) {
   if (points.length < 2) return null;
-  
   const curve = new THREE.CatmullRomCurve3(points);
-  const tubeGeometry = new THREE.TubeGeometry(
-    curve,
-    Math.max(20, points.length * 2),
-    width,
-    8,
-    false
-  );
-  
-  const material = new THREE.MeshStandardMaterial({ 
-    color: color,
-    roughness: 0.3,
-    metalness: 0.1
-  });
-  
-  const tube = new THREE.Mesh(tubeGeometry, material);
-  tube.userData = { type: 'tube', color, width, points };
+  const geo   = new THREE.TubeGeometry(curve, Math.max(20, points.length * 2), width, 8, false);
+  const mat   = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.1 });
+  const tube  = new THREE.Mesh(geo, mat);
+  tube.userData = { type: "tube", color, width, points };
   return tube;
 }
 
-/* Создание геометрических фигур */
-function createMesh(type, color) {
-  const material = new THREE.MeshStandardMaterial({ 
-    color: color,
-    roughness: 0.3,
-    metalness: 0.1
-  });
-  
-  switch(type) {
-    case "cube":
-      return new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), material);
-    case "sphere":
-      return new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), material);
-    case "cylinder":
-      return new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.8, 32), material);
-    case "pyramid":
-      return new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 4), material);
-    default:
-      return null;
+/* ── Панели ── */
+function setPanelsVisible(visible) {
+  toolsPanel.classList.toggle("visible", visible);
+  settingsPanel.classList.toggle("visible", visible);
+  activePanel      = visible ? "tools" : null;
+  panelsVisible    = visible;
+  clickState.enabled = visible;
+  hotZoneCenter.classList.toggle("panels-open", visible);
+}
+
+/* В 2D-логике кулак НЕ переключает панели, только короткая вспышка курсора. */
+function togglePanelsWithFist(isFistNow) {
+  if (isFistNow && !isFistDetected) {
+    isFistDetected = true;
+    pinchCursor.classList.add("cursor-fist");
+    setTimeout(() => pinchCursor.classList.remove("cursor-fist"), 500);
+  } else if (!isFistNow) {
+    isFistDetected = false;
   }
 }
 
-/* Управление панелями */
-function togglePanelsWithFist(isFistNow) {
-    if (isFistNow && !isFistDetected) {
-        const toolsVisible = toolsPanel.classList.contains('visible');
-        const settingsVisible = settingsPanel.classList.contains('visible');
-
-        if (!toolsVisible && !settingsVisible) {
-            // Открываем обе панели одновременно
-            toolsPanel.classList.add('visible');
-            settingsPanel.classList.add('visible');
-            activePanel = 'tools';
-            panelsVisible = true;
-            clickDetectionState.enabled = true;
-            showHoverIndicator('🖌️ Панели открыты');
-        } else {
-            // Если одна или обе панели уже видимы, переключаемся/закрываем их
-            if (toolsVisible && settingsVisible) {
-                toolsPanel.classList.remove('visible');
-                settingsPanel.classList.remove('visible');
-                activePanel = null;
-                panelsVisible = false;
-                clickDetectionState.enabled = false;
-                showHoverIndicator('👊 Панели закрыты');
-            } else {
-                toolsPanel.classList.add('visible');
-                settingsPanel.classList.add('visible');
-                activePanel = 'tools';
-                panelsVisible = true;
-                clickDetectionState.enabled = true;
-                showHoverIndicator('🖌️ Панели открыты');
-            }
-        }
-        isFistDetected = true;
-        updateCursorForFist();
-    } else if (!isFistNow && isFistDetected) {
-        isFistDetected = false;
-    }
-}
-
-function updateCursorForFist() {
-    pinchCursor.classList.add('cursor-fist');
-    setTimeout(() => {
-        pinchCursor.classList.remove('cursor-fist');
-    }, 500);
-}
-
+let _hoverTimer = 0;
 function showHoverIndicator(text) {
-    hoverIndicator.textContent = text;
-    hoverIndicator.style.display = 'block';
-    setTimeout(() => {
-        hoverIndicator.style.display = 'none';
-    }, 2000);
+  hoverIndicator.textContent = text;
+  hoverIndicator.style.display = "block";
+  clearTimeout(_hoverTimer);
+  _hoverTimer = setTimeout(() => (hoverIndicator.style.display = "none"), 2000);
 }
+
+/* ── Курсор ── */
+const CURSOR_CLASSES = ["cursor-movexy","cursor-movez","cursor-rotate","cursor-scale","cursor-draw","cursor-fist"];
 
 function updateCursorColor() {
-    pinchCursor.className = '';
-    if (currentMode === 'draw') {
-        pinchCursor.classList.add('cursor-draw');
-    } else {
-        pinchCursor.classList.add('cursor-' + currentMode);
-    }
+  pinchCursor.classList.remove(...CURSOR_CLASSES);
+  pinchCursor.classList.add(currentMode === "draw" ? "cursor-draw" : `cursor-${currentMode}`);
 }
 
-/* UI ФУНКЦИИ */
+let _lastCursorTime = 0;
+const CURSOR_INTERVAL = 16;
+
+function updateCursorPosition(sx, sy, scale = 1.2) {
+  const now = performance.now();
+  if (now - _lastCursorTime < CURSOR_INTERVAL) return;
+  _lastCursorTime = now;
+
+  const dx = cameraMirrored ? (1 - sx) : sx;
+  pinchCursor.style.left      = `${dx * 100}%`;
+  pinchCursor.style.top       = `${sy * 100}%`;
+  pinchCursor.style.transform = `translate(-50%,-50%) scale(${scale})`;
+  pinchCursor.classList.add("visible");
+}
+
+/* ── UI-действия ── */
 window.addShape = (type) => {
-  console.log('addShape called:', type);
-  const color = document.getElementById("brushColorPicker").value;
-  console.log('Color:', color);
-  const mesh = createMesh(type, color);
-  if (!mesh) {
-    console.error('Mesh not created for type:', type);
-    return;
-  }
-  console.log('Mesh created:', mesh);
-  
+  const mesh = createMesh(type, brushColorPicker.value);
+  if (!mesh) return;
   mesh.position.set(0, 0, 0);
   scene.add(mesh);
-  console.log('Mesh added to scene, scene children:', scene.children.length);
-  
-  const obj = {
-    mesh,
-    type,
-    name: `${getTypeName(type)} ${objects.length + 1}`,
-    id: Date.now() + Math.random()
-  };
-  
+  const obj = { mesh, type, name: `${getTypeName(type)} ${objects.length + 1}`, id: Date.now() };
   objects.push(obj);
-  console.log('Objects count:', objects.length);
   setActive(obj);
   updateObjectsList();
 };
 
-function getTypeName(type) {
-  const names = {
-    cube: 'Куб',
-    sphere: 'Сфера',
-    cylinder: 'Цилиндр',
-    pyramid: 'Пирамида',
-    tube: 'Линия'
-  };
-  return names[type] || type;
-}
-
-window.startDrawing = () => {
-  setMode('draw');
-  document.getElementById('tool-draw').classList.add('active');
-};
+window.startDrawing = () => setMode("draw");
 
 window.setMode = (mode) => {
   currentMode = mode;
-  isDrawing = (mode === 'draw');
-  
-  const zoneElements = {
-    movexy: document.getElementById('zoneMoveXY'),
-    movez: document.getElementById('zoneMoveZ'),
-    rotate: document.getElementById('zoneRotate'),
-    scale: document.getElementById('zoneScale')
-  };
-  
-  Object.entries(zoneElements).forEach(([zoneMode, element]) => {
-    if (element) {
-      element.classList.toggle('active', zoneMode === mode);
-    }
+  isDrawing   = (mode === "draw");
+
+  /* Обновляем зоны */
+  ["zoneMoveXY","zoneMoveZ","zoneRotate","zoneScale"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("active", id.replace("zone","").toLowerCase() === mode);
   });
-  
+
   updateCursorColor();
-  
-  document.querySelectorAll('.btn.active').forEach(btn => btn.classList.remove('active'));
-  
-  if (mode === 'draw') {
-    document.getElementById('tool-draw').classList.add('active');
-  }
-  
-  modeText.textContent = `Режим: ${getModeName(mode)}`;
-  
-  const modeDisplay = document.getElementById('currentModeDisplay');
-  if (modeDisplay) {
-    modeDisplay.textContent = getModeName(mode);
-  }
+  document.querySelectorAll(".btn.active").forEach(b => b.classList.remove("active"));
+  if (mode === "draw") document.getElementById("tool-draw").classList.add("active");
+
+  modeText.textContent         = `Режим: ${getModeName(mode)}`;
+  currentModeDisplay.textContent = getModeName(mode);
 };
 
-function getModeName(mode) {
-  const names = {
-    movexy: 'Двигать XY',
-    movez: 'Двигать Z',
-    rotate: 'Крутить',
-    scale: 'Размер',
-    draw: 'Рисование'
-  };
-  return names[mode] || mode;
-}
+window.activateFreeMove = () => {
+  setMode("movexy");
+  showHoverIndicator("Свободное перемещение включено");
+};
 
 window.deleteActive = () => {
   if (!activeObject) return;
-  
   scene.remove(activeObject.mesh);
   objects = objects.filter(o => o !== activeObject);
-  activeObject = objects.length > 0 ? objects[objects.length - 1] : null;
-  
-  if (activeObject && activeObject.mesh.material) {
-    document.getElementById("brushColorPicker").value = 
-      "#" + activeObject.mesh.material.color.getHexString();
-  }
-  
+  activeObject = objects.at(-1) ?? null;
+  if (activeObject?.mesh.material)
+    brushColorPicker.value = "#" + activeObject.mesh.material.color.getHexString();
   updateObjectsList();
 };
 
 window.clearScene = () => {
   if (!confirm("Очистить всю сцену?")) return;
-  
-  objects.forEach(obj => scene.remove(obj.mesh));
+  objects.forEach(o => scene.remove(o.mesh));
   objects = [];
   activeObject = null;
   updateObjectsList();
 };
 
+window.deleteObject = (index) => {
+  if (index < 0 || index >= objects.length) return;
+  scene.remove(objects[index].mesh);
+  objects.splice(index, 1);
+  activeObject = objects.at(-1) ?? null;
+  updateObjectsList();
+};
+
 function setActive(obj) {
   activeObject = obj;
+  if (obj?.mesh.material)
+    brushColorPicker.value = "#" + obj.mesh.material.color.getHexString();
   updateObjectsList();
-  
-  if (obj && obj.mesh.material) {
-    const hexColor = obj.mesh.material.color.getHexString();
-    document.getElementById("brushColorPicker").value = "#" + hexColor;
-  }
+}
+
+/* ── Список объектов (без innerHTML — без XSS) ── */
+function createObjectItem(obj, index) {
+  const item = document.createElement("div");
+  item.className = `object-item${obj === activeObject ? " active" : ""}`;
+
+  const dot = document.createElement("div");
+  dot.className = "object-color";
+  dot.style.background = "#" + obj.mesh.material.color.getHexString();
+
+  const name = document.createElement("span");
+  name.className = "object-name";
+  name.textContent = obj.name;
+
+  const type = document.createElement("span");
+  type.className = "object-type";
+  type.textContent = getTypeName(obj.type);
+
+  const del = document.createElement("button");
+  del.className = "delete-object";
+  del.textContent = "×";
+  del.addEventListener("click", e => { e.stopPropagation(); deleteObject(index); });
+
+  item.append(dot, name, type, del);
+  item.addEventListener("click", () => setActive(obj));
+  return item;
 }
 
 function updateObjectsList() {
-  const list = document.getElementById("objectsList");
-  const counter = document.getElementById("objectsCount");
-  
-  list.innerHTML = '';
-  counter.textContent = objects.length;
-  
-  objects.forEach((obj, index) => {
-    const color = obj.mesh.material.color;
-    const hexColor = "#" + color.getHexString();
-    
-    const item = document.createElement("div");
-    item.className = "object-item" + (obj === activeObject ? " active" : "");
-    item.innerHTML = `
-      <div class="object-color" style="background:${hexColor}"></div>
-      <span class="object-name">${obj.name}</span>
-      <span class="object-type">${getTypeName(obj.type)}</span>
-      <button class="delete-object" onclick="deleteObject(${index})">×</button>
-    `;
-    
-    item.onclick = () => setActive(obj);
-    list.appendChild(item);
-  });
+  /* Список объектов скрыт — функция оставлена, чтобы не ломать существующие вызовы */
+  if (!objectsList || !objectsCount) return;
+  objectsList.innerHTML = "";
+  objectsCount.textContent = objects.length;
+  const frag = document.createDocumentFragment();
+  objects.forEach((obj, i) => frag.appendChild(createObjectItem(obj, i)));
+  objectsList.appendChild(frag);
 }
 
-window.deleteObject = (index) => {
-  if (index >= 0 && index < objects.length) {
-    scene.remove(objects[index].mesh);
-    objects.splice(index, 1);
-    
-    if (objects.length > 0) {
-      setActive(objects[objects.length - 1]);
-    } else {
-      activeObject = null;
-      updateObjectsList();
-    }
-  }
-};
-
-/* ОБРАБОТЧИКИ UI */
-document.getElementById("brushColorPicker").addEventListener("input", (e) => {
+/* ── Обработчики UI ── */
+brushColorPicker.addEventListener("input", e => {
   brushSettings.color = e.target.value;
-  
-  // Update swatch selection
-  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-  
-  if (activeObject && activeObject.mesh.material) {
+  colorSwatches.forEach(s => s.classList.remove("active"));
+  if (activeObject?.mesh.material) {
     activeObject.mesh.material.color.set(e.target.value);
     updateObjectsList();
   }
 });
 
-// Color swatches
-document.querySelectorAll('.color-swatch').forEach(swatch => {
-  swatch.addEventListener('click', () => {
-    const color = swatch.getAttribute('data-color');
-    document.getElementById('brushColorPicker').value = color;
-    brushSettings.color = color;
-    
-    // Update active swatch
-    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-    swatch.classList.add('active');
-    
-    // Apply to selected object
-    if (activeObject && activeObject.mesh.material) {
+colorSwatches.forEach(swatch => {
+  swatch.addEventListener("click", () => {
+    const color = swatch.dataset.color;
+    brushColorPicker.value = color;
+    brushSettings.color    = color;
+    colorSwatches.forEach(s => s.classList.remove("active"));
+    swatch.classList.add("active");
+    if (activeObject?.mesh.material) {
       activeObject.mesh.material.color.set(color);
       updateObjectsList();
     }
   });
 });
 
-document.getElementById("brushWidthPicker").addEventListener("input", (e) => {
+document.getElementById("brushWidthPicker").addEventListener("input", e => {
   brushSettings.width = parseFloat(e.target.value);
   document.getElementById("brushWidthValue").textContent = brushSettings.width.toFixed(2);
 });
 
-document.getElementById("smoothnessPicker").addEventListener("input", (e) => {
-  smoothingSettings.positionSmoothness = parseFloat(e.target.value);
-  document.getElementById("smoothnessValue").textContent = smoothingSettings.positionSmoothness.toFixed(2);
+document.getElementById("smoothnessPicker").addEventListener("input", e => {
+  smoothing.factor = parseFloat(e.target.value);
+  document.getElementById("smoothnessValue").textContent = smoothing.factor.toFixed(2);
 });
 
 window.toggleBackground = () => {
-  const toggleBtn = document.getElementById('bgToggleBtn');
   isBackgroundEnabled = !isBackgroundEnabled;
-  toggleBtn.classList.toggle('active', isBackgroundEnabled);
-  
-  if (isBackgroundEnabled) {
-    scene.background = new THREE.Color(bgColor);
-    if (customBackground) {
-      scene.background = customBackground;
-    }
-  } else {
-    scene.background = new THREE.Color(0x0b0b10);
-  }
+  document.getElementById("bgToggleBtn").classList.toggle("active", isBackgroundEnabled);
+  scene.background = isBackgroundEnabled
+    ? (customBackground ?? new THREE.Color(bgColor))
+    : new THREE.Color(0x0b0b10);
 };
 
-document.getElementById("bgColorPicker").addEventListener("input", (e) => {
+document.getElementById("bgColorPicker").addEventListener("input", e => {
   bgColor = e.target.value;
-  if (isBackgroundEnabled && !customBackground) {
+  if (isBackgroundEnabled && !customBackground)
     scene.background = new THREE.Color(bgColor);
-  }
 });
 
 window.toggleCamera = () => {
   cameraEnabled = !cameraEnabled;
-  const btn = document.getElementById('btn-camera');
-  btn.classList.toggle('active', cameraEnabled);
-  btn.innerHTML = cameraEnabled ? '<span class="btn-icon">📷</span>Вкл.' : '<span class="btn-icon">📷</span>Выкл.';
+  const btn = document.getElementById("btn-camera");
+  btn.classList.toggle("active", cameraEnabled);
+  btn.innerHTML = `<span class="btn-icon">📷</span>${cameraEnabled ? "Вкл." : "Выкл."}`;
   video.style.opacity = cameraEnabled ? "1" : "0.3";
 };
 
 window.toggleCameraMirror = () => {
   cameraMirrored = !cameraMirrored;
-  video.classList.toggle('mirrored', cameraMirrored);
-  const btn = document.getElementById('btn-mirror');
-  btn.classList.toggle('active', cameraMirrored);
+  video.classList.toggle("mirrored", cameraMirrored);
+  document.getElementById("btn-mirror").classList.toggle("active", cameraMirrored);
 };
 
-/* Загрузка фона */
 window.loadBackgroundImage = () => {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
-  
-  input.onchange = (e) => {
+  input.onchange = e => {
     const file = e.target.files[0];
     if (!file) return;
-    
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const texture = new THREE.TextureLoader().load(event.target.result);
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        scene.background = texture;
-        customBackground = texture;
+    reader.onload = ev => {
+      new THREE.TextureLoader().load(ev.target.result, tex => {
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        scene.background  = tex;
+        customBackground  = tex;
         isBackgroundEnabled = false;
-        document.getElementById('bgToggleBtn').classList.remove('active');
-      };
-      img.src = event.target.result;
+        document.getElementById("bgToggleBtn").classList.remove("active");
+      });
     };
     reader.readAsDataURL(file);
   };
-  
   input.click();
 };
 
-/* Инициализация зон режимов */
+/* ── Экспорт ── */
+function downloadCanvas(el, name) {
+  const a = document.createElement("a");
+  a.download = name;
+  a.href     = el.toDataURL("image/png");
+  a.click();
+}
+
+window.saveTransparent    = () => downloadCanvas(renderer.domElement, "scene-transparent.png");
+window.saveWithColorBg    = () => {
+  const c = document.createElement("canvas");
+  c.width = innerWidth; c.height = innerHeight;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(renderer.domElement, 0, 0);
+  downloadCanvas(c, "scene-colored-bg.png");
+};
+window.saveWithBackground = () => {
+  const c = document.createElement("canvas");
+  c.width = innerWidth; c.height = innerHeight;
+  const ctx = c.getContext("2d");
+  if (cameraEnabled && video.videoWidth > 0) ctx.drawImage(video, 0, 0, c.width, c.height);
+  ctx.drawImage(renderer.domElement, 0, 0);
+  downloadCanvas(c, "scene-with-background.png");
+};
+
+/* ── Зоны режимов ── */
 function initModeZones() {
-  const zoneIds = ['zoneMoveXY', 'zoneMoveZ', 'zoneRotate', 'zoneScale'];
-  
-  zoneIds.forEach(zoneId => {
-    const element = document.getElementById(zoneId);
-    if (element) {
-      const mode = zoneId.replace('zone', '').toLowerCase();
-      modeZones[mode] = {
-        element: element,
-        rect: null
-      };
-      updateZoneRect(mode);
-    }
-  });
+  [["zoneMoveXY","movexy"],["zoneMoveZ","movez"],["zoneRotate","rotate"],["zoneScale","scale"]]
+    .forEach(([id, mode]) => {
+      const el = document.getElementById(id);
+      if (el) modeZones[mode] = { el, rect: el.getBoundingClientRect() };
+    });
 }
 
-/* ФУНКЦИИ ДЛЯ КЛИКОВ ЖЕСТАМИ */
+function refreshZoneRects() {
+  Object.values(modeZones).forEach(z => (z.rect = z.el.getBoundingClientRect()));
+}
 
-// Получение элемента под курсором
+function getZoneFromPosition(x, y) {
+  const sx = (cameraMirrored ? 1 - x : x) * innerWidth;
+  const sy = y * innerHeight;
+  for (const [mode, z] of Object.entries(modeZones)) {
+    const r = z.rect;
+    if (sx >= r.left && sx <= r.right && sy >= r.top && sy <= r.bottom) return mode;
+  }
+  return null;
+}
+
+/* ── HOT ZONES — удержание для открытия/закрытия панелей (логика как в 2D) ── */
+const HOLD_DURATION_MS = 1200;
+const CIRCUMFERENCE    = 200;
+const BOTTOM_W = 420, BOTTOM_H = 75;
+const CENTER_SIZE = 420;
+
+function makeHotZone(el, chk, fire) {
+  return { el, check: chk, onFire: fire, active: false, startTime: 0, fired: false };
+}
+
+const zoneBottom = makeHotZone(
+  hotZoneBottom,
+  (sx, sy) => {
+    const l = (window.innerWidth - BOTTOM_W) / 2;
+    return sy >= 0 && sy <= BOTTOM_H && sx >= l && sx <= l + BOTTOM_W;
+  },
+  () => { setPanelsVisible(true);  showHoverIndicator("🖌️ Панели открыты"); }
+);
+
+const zoneCenter = makeHotZone(
+  hotZoneCenter,
+  (sx, sy) => {
+    if (!toolsPanel.classList.contains("visible")) return false;
+    const cx = window.innerWidth / 2, cy = window.innerHeight / 2, h = CENTER_SIZE / 2;
+    return sx >= cx - h && sx <= cx + h && sy >= cy - h && sy <= cy + h;
+  },
+  () => { setPanelsVisible(false); showHoverIndicator("✖️ Панели закрыты"); }
+);
+
+const allZones = [zoneBottom, zoneCenter];
+let activeZone = null;
+
+function setRingProgress(p) {
+  holdRingProg.style.strokeDashoffset = CIRCUMFERENCE * (1 - p);
+}
+
+function tickHotZones(sx, sy) {
+  let inside = null;
+  for (const z of allZones) if (z.check(sx, sy)) { inside = z; break; }
+
+  if (inside !== activeZone) {
+    if (activeZone) {
+      activeZone.el.classList.remove("hovered");
+      activeZone.active = activeZone.fired = false;
+      holdRing.classList.remove("active");
+    }
+    activeZone = inside;
+    if (activeZone) {
+      activeZone.active = true;
+      activeZone.startTime = performance.now();
+      activeZone.fired = false;
+      holdRing.style.display = "block";
+      holdRing.classList.add("active");
+      setRingProgress(0);
+    } else {
+      holdRing.style.display = "none";
+      holdRing.classList.remove("active", "complete");
+      setRingProgress(0);
+    }
+  }
+
+  if (activeZone && !activeZone.fired) {
+    activeZone.el.classList.add("hovered");
+    const p = Math.min((performance.now() - activeZone.startTime) / HOLD_DURATION_MS, 1);
+    setRingProgress(p);
+    holdRing.style.left = sx + "px";
+    holdRing.style.top  = sy + "px";
+    if (p >= 1) {
+      activeZone.fired = true;
+      activeZone.el.classList.remove("hovered");
+      holdRing.classList.add("complete");
+      holdRing.classList.remove("active");
+      setTimeout(() => { holdRing.style.display = "none"; }, 350);
+      setRingProgress(0);
+      activeZone.onFire();
+      activeZone = null;
+    }
+  }
+}
+
+function resetAllZones() {
+  for (const z of allZones) {
+    z.active = z.fired = false;
+    z.el.classList.remove("hovered");
+  }
+  activeZone = null;
+  holdRing.style.display = "none";
+  holdRing.classList.remove("active", "complete");
+  setRingProgress(0);
+}
+
+/* ── Детекция кулака (без sqrt) ── */
+const FIST_SQ = 0.15 * 0.15;
+
+function isFistGesture(landmarks) {
+  if (!landmarks?.length) return false;
+  const lm = landmarks[0];
+  const wrist = lm[0];
+  return [lm[4], lm[8], lm[12], lm[16], lm[20]].every(t => distSq(t, wrist) < FIST_SQ);
+}
+
+/* ── Элемент под курсором (pointer-events:none уже на курсоре) ── */
 function getElementAtPosition(x, y) {
-  const displayX = cameraMirrored ? (1 - x) * window.innerWidth : x * window.innerWidth;
-  const screenY = y * window.innerHeight;
-  
-  // Скрываем курсор на время проверки
-  const cursor = document.getElementById('pinchCursor');
-  const originalDisplay = cursor.style.display;
-  cursor.style.display = 'none';
-  
-  // Получаем элемент под курсором
-  const element = document.elementFromPoint(displayX, screenY);
-  
-  // Восстанавливаем курсор
-  cursor.style.display = originalDisplay || '';
-  
-  return element;
+  const sx = (cameraMirrored ? 1 - x : x) * innerWidth;
+  return document.elementFromPoint(sx, y * innerHeight);
 }
 
-// Проверка, является ли элемент кликабельным
-function isClickableElement(element) {
-  if (!element) return false;
-  
-  // Проверяем теги
-  const clickableTags = ['BUTTON', 'INPUT', 'SELECT', 'A'];
-  if (clickableTags.includes(element.tagName)) {
-    return true;
+const CLICKABLE_TAGS    = new Set(["BUTTON","INPUT","SELECT","A"]);
+const CLICKABLE_CLASSES = new Set([
+  "btn","object-item","toggle-btn","slider","zone-button","color-swatch","color-picker"
+]);
+
+function isClickable(el) {
+  if (!el) return false;
+  if (CLICKABLE_TAGS.has(el.tagName)) return true;
+  if ([...el.classList].some(c => CLICKABLE_CLASSES.has(c))) return true;
+  let p = el.parentElement;
+  while (p) {
+    if ([...p.classList].some(c => CLICKABLE_CLASSES.has(c))) return true;
+    p = p.parentElement;
   }
-  
-  // Проверяем классы
-  const clickableClasses = [
-    'btn', 'object-item', 'color-input', 'range-input', 
-    'toggle-switch', 'switch', 'slider', 'zone-button', 'color-swatch'
-  ];
-  
-  for (const className of clickableClasses) {
-    if (element.classList.contains(className)) {
-      return true;
-    }
-  }
-  
-  // Проверяем родителей
-  let parent = element.parentElement;
-  while (parent) {
-    if (parent.classList && Array.from(parent.classList)
-        .some(c => clickableClasses.includes(c))) {
-      return true;
-    }
-    parent = parent.parentElement;
-  }
-  
   return false;
 }
 
-// Подсветка элемента
-function highlightElement(element, highlight = true) {
-  if (!element) return;
-  
-  // Находим фактический кликабельный элемент
-  let clickableElement = element;
-  
-  // Если элемент не кликабельный, ищем родителя
-  if (!isClickableElement(element)) {
-    clickableElement = element.closest(
-      '.btn, .object-item, .color-input, .range-input, .switch, .slider, .zone-button'
-    );
-  }
-  
-  if (!clickableElement) return;
-  
-  // Снимаем подсветку с предыдущего элемента
-  if (clickDetectionState.lastElement && 
-      clickDetectionState.lastElement !== clickableElement) {
-    clickDetectionState.lastElement.classList.remove('highlighted');
-  }
-  
-  if (highlight) {
-    clickableElement.classList.add('highlighted');
-    clickDetectionState.lastElement = clickableElement;
+function resolveClickable(el) {
+  if (!el) return null;
+  if (isClickable(el)) return el;
+  return el.closest(".btn,.object-item,.slider,.zone-button,.color-swatch,.color-picker,.toggle-btn");
+}
+
+function highlightElement(el, on) {
+  const target = resolveClickable(el);
+  if (!target) return;
+  if (on) {
+    if (clickState.lastEl && clickState.lastEl !== target)
+      clickState.lastEl.classList.remove("highlighted");
+    target.classList.add("highlighted");
+    clickState.lastEl = target;
   } else {
-    clickableElement.classList.remove('highlighted');
-    clickDetectionState.lastElement = null;
+    target.classList.remove("highlighted");
+    clickState.lastEl = null;
   }
 }
 
-// Эффект визуальной обратной связи при клике
-function showClickFeedback(x, y) {
-  const feedback = document.createElement('div');
-  feedback.className = 'click-feedback';
-  feedback.style.position = 'fixed';
-  feedback.style.left = x * 100 + '%';
-  feedback.style.top = y * 100 + '%';
-  feedback.style.width = '50px';
-  feedback.style.height = '50px';
-  feedback.style.background = 'radial-gradient(circle, rgba(93, 220, 255, 0.6) 0%, transparent 70%)';
-  feedback.style.transform = 'translate(-50%, -50%)';
-  
-  document.body.appendChild(feedback);
-  
-  setTimeout(() => {
-    feedback.remove();
-  }, 400);
+/* ── Визуальная обратная связь при клике ── */
+function showClickFeedback(normX, normY) {
+  const el = document.createElement("div");
+  el.className = "click-feedback";
+  el.style.left = `${(cameraMirrored ? 1 - normX : normX) * 100}%`;
+  el.style.top  = `${normY * 100}%`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 400);
 }
 
-// Обработка клика по элементу
-function handleElementClick(element, cursorX, cursorY) {
-  if (!element) return;
-  
-  const displayX = cameraMirrored ? (1 - cursorX) : cursorX;
-  
-  // Показываем визуальную обратную связь
-  showClickFeedback(displayX, cursorY);
-  
-  // Находим фактический кликабельный элемент
-  let clickableElement = element;
-  if (!isClickableElement(element)) {
-    clickableElement = element.closest(
-      '.btn, .object-item, .color-input, .range-input, .switch, .slider, .zone-button, .color-swatch'
-    );
-  }
-  
-  if (!clickableElement) return;
-  
-  // Обрабатываем разные типы элементов
-  if (clickableElement.tagName === 'BUTTON') {
-    // Кнопки
-    clickableElement.click();
-    
-    // Дополнительная визуальная обратная связь
-    const originalBg = clickableElement.style.background;
-    clickableElement.style.background = 'rgba(93, 220, 255, 0.4)';
-    
-    setTimeout(() => {
-      clickableElement.style.background = originalBg;
-      clickableElement.classList.remove('highlighted');
-    }, 200);
-    
-  } else if (clickableElement.type === 'range') {
-    // Слайдеры
-    const rect = clickableElement.getBoundingClientRect();
-    const relativeX = (displayX * window.innerWidth - rect.left) / rect.width;
-    const value = Math.max(0, Math.min(1, relativeX));
-    const min = parseFloat(clickableElement.min) || 0;
-    const max = parseFloat(clickableElement.max) || 100;
-    
-    const newValue = min + value * (max - min);
-    clickableElement.value = newValue;
-    
-    // Триггерим события
-    clickableElement.dispatchEvent(new Event('input', { bubbles: true }));
-    clickableElement.dispatchEvent(new Event('change', { bubbles: true }));
-    
-  } else if (clickableElement.type === 'color') {
-    // Цветовые пикеры
-    clickableElement.click();
-    
-  } else if (clickableElement.classList.contains('object-item')) {
-    // Элементы списка объектов
-    clickableElement.click();
-    
-  } else if (clickableElement.classList.contains('color-swatch')) {
-    // Цветовые образцы
-    const color = clickableElement.getAttribute('data-color');
+/* ── Обработка клика жестом ── */
+function handleElementClick(el, cx, cy) {
+  showClickFeedback(cx, cy);
+  const target = resolveClickable(el);
+  if (!target) return;
+
+  if (target.tagName === "BUTTON") {
+    target.click();
+    const prev = target.style.background;
+    target.style.background = "rgba(93,220,255,0.4)";
+    setTimeout(() => { target.style.background = prev; target.classList.remove("highlighted"); }, 200);
+
+  } else if (target.type === "range") {
+    const dx  = (cameraMirrored ? 1 - cx : cx) * innerWidth;
+    const r   = target.getBoundingClientRect();
+    const rel = Math.max(0, Math.min(1, (dx - r.left) / r.width));
+    const min = +target.min || 0, max = +target.max || 100;
+    target.value = min + rel * (max - min);
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+    target.dispatchEvent(new Event("change", { bubbles: true }));
+
+  } else if (target.type === "color") {
+    target.click();
+
+  } else if (target.classList.contains("color-swatch")) {
+    const color = target.dataset.color;
     if (color) {
-      document.getElementById('brushColorPicker').value = color;
-      brushSettings.color = color;
-      
-      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-      clickableElement.classList.add('active');
-      
-      if (activeObject && activeObject.mesh.material) {
+      brushColorPicker.value = color;
+      brushSettings.color    = color;
+      colorSwatches.forEach(s => s.classList.remove("active"));
+      target.classList.add("active");
+      if (activeObject?.mesh.material) {
         activeObject.mesh.material.color.set(color);
         updateObjectsList();
       }
     }
-    
-  } else if (clickableElement.classList.contains('switch')) {
-    // Переключатели
-    const checkbox = clickableElement.querySelector('input[type="checkbox"]');
-    if (checkbox) {
-      checkbox.checked = !checkbox.checked;
-      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-  }
-}
-//вагури каороку хз зачем, просто так, я же еблан мне можно, типо водяной знак
-function updateZoneRect(mode) {
-  if (modeZones[mode] && modeZones[mode].element) {
-    modeZones[mode].rect = modeZones[mode].element.getBoundingClientRect();
+  } else if (target.classList.contains("object-item") || target.classList.contains("toggle-btn")) {
+    target.click();
   }
 }
 
-/* Определение зоны по позиции руки */
-function getZoneFromPosition(x, y) {
-  // При зеркалировании инвертируем X координату для определения зоны
-  let screenX = x * window.innerWidth;
-  if (cameraMirrored) {
-    screenX = window.innerWidth - screenX;
+/* ══════════════════════════════════════════════════════════════════════
+   🦴 3D TUBE HAND RENDERER
+   ══════════════════════════════════════════════════════════════════════ */
+function getHandLabel(cat) { return cameraMirrored ? (cat==='Left'?'R':'L') : (cat==='Left'?'L':'R'); }
+function getScheme(label) {
+  const c = label==='L' ? {b:[18,140,210],d:[5,60,120],br:[100,220,255]} : {b:[140,45,195],d:[55,8,100],br:[210,140,255]};
+  const glow = label==='L' ? 'rgba(75,227,255,0.5)' : 'rgba(192,132,252,0.5)';
+  const acc  = label==='L' ? '#4be3ff' : '#c084fc';
+  return { base:c.b, dark:c.d, bright:c.br, ao:[3,35,80], glow, accent:acc, outline: label==='L'?'rgba(20,200,255,0.8)':'rgba(180,100,255,0.8)' };
+}
+function sRgb(c, a=1) { return a<1 ? `rgba(${c[0]},${c[1]},${c[2]},${a})` : `rgb(${c[0]},${c[1]},${c[2]})`; }
+function lmXY(lm, W, H) { return { x: cameraMirrored ? (1-lm.x)*W : lm.x*W, y: lm.y*H, z: lm.z }; }
+
+const FINGER_CHAINS_SK = [[0,1,2,3,4],[0,5,6,7,8],[0,9,10,11,12],[0,13,14,15,16],[0,17,18,19,20]];
+const PALM_LINKS_SK    = [[0,5],[0,9],[0,13],[0,17],[5,9],[9,13],[13,17]];
+
+function drawHand3D_sk(landmarks, categoryName, W, H) {
+  const label = getHandLabel(categoryName), scheme = getScheme(label), pts = landmarks.map(lm => lmXY(lm, W, H));
+  const wrist = pts[0], midBase = pts[9], handSpan = Math.hypot(midBase.x-wrist.x, midBase.y-wrist.y);
+  const scale = Math.max(0.5, Math.min(2.2, handSpan/150));
+
+  const drawTube = (p1, p2, r1, r2) => {
+    const dx=p2.x-p1.x, dy=p2.y-p1.y, len=Math.hypot(dx,dy); if(len<2) return;
+    const nx=-dy/len, ny=dx/len;
+    const corners = [[p1.x+nx*r1,p1.y+ny*r1],[p2.x+nx*r2,p2.y+ny*r2],[p2.x-nx*r2,p2.y-ny*r2],[p1.x-nx*r1,p1.y-ny*r1]];
+    sCtx.save(); sCtx.shadowColor='rgba(0,0,0,0.5)'; sCtx.shadowBlur=r1*3; sCtx.shadowOffsetX=r1*0.4; sCtx.shadowOffsetY=r1*0.5; sCtx.fillStyle='rgba(0,0,0,0.01)'; sCtx.beginPath(); sCtx.moveTo(...corners[0]); sCtx.lineTo(...corners[1]); sCtx.lineTo(...corners[2]); sCtx.lineTo(...corners[3]); sCtx.closePath(); sCtx.fill(); sCtx.restore();
+    const midX=(p1.x+p2.x)/2, midY=(p1.y+p2.y)/2;
+    const grad=sCtx.createLinearGradient(midX+nx*r1, midY+ny*r1, midX-nx*r1, midY-ny*r1);
+    grad.addColorStop(0, sRgb(scheme.dark)); grad.addColorStop(0.3, sRgb(scheme.base)); grad.addColorStop(0.5, sRgb(scheme.bright)); grad.addColorStop(0.7, sRgb(scheme.base)); grad.addColorStop(1, sRgb(scheme.dark));
+    sCtx.fillStyle=grad; sCtx.beginPath(); sCtx.moveTo(...corners[0]); sCtx.lineTo(...corners[1]); sCtx.lineTo(...corners[2]); sCtx.lineTo(...corners[3]); sCtx.closePath(); sCtx.fill();
+    const hR=r1*0.3; sCtx.strokeStyle='rgba(255,255,255,0.6)'; sCtx.lineWidth=Math.max(1, hR*0.9); sCtx.lineCap='round'; sCtx.beginPath(); sCtx.moveTo(p1.x+nx*hR*0.5, p1.y+ny*hR*0.5); sCtx.lineTo(p2.x+nx*hR*0.5, p2.y+ny*hR*0.5); sCtx.stroke();
+  };
+  const drawSphere = (p, r) => {
+    sCtx.save(); sCtx.shadowColor='rgba(0,0,0,0.6)'; sCtx.shadowBlur=r*2; sCtx.shadowOffsetX=r*0.3; sCtx.shadowOffsetY=r*0.4;
+    const grad=sCtx.createRadialGradient(p.x-r*0.35, p.y-r*0.35, 0, p.x, p.y, r);
+    grad.addColorStop(0, sRgb(scheme.bright)); grad.addColorStop(0.4, sRgb(scheme.base)); grad.addColorStop(1, sRgb(scheme.dark));
+    sCtx.fillStyle=grad; sCtx.beginPath(); sCtx.arc(p.x, p.y, r, 0, Math.PI*2); sCtx.fill();
+    sCtx.fillStyle='rgba(255,255,255,0.85)'; sCtx.beginPath(); sCtx.arc(p.x-r*0.35, p.y-r*0.35, r*0.22, 0, Math.PI*2); sCtx.fill(); sCtx.restore();
+  };
+
+  for(const [a,b] of PALM_LINKS_SK) drawTube(pts[a], pts[b], 5*scale, 5*scale);
+  for(const chain of FINGER_CHAINS_SK) for(let i=0; i<chain.length-1; i++) {
+    const isTip=i===chain.length-2; drawTube(pts[chain[i]], pts[chain[i+1]], 6*scale, isTip?3.5*scale:5*scale);
   }
-  const screenY = y * window.innerHeight;
-  
-  // Порядок зон по экрану слева направо
-  const zoneOrder = ['movexy', 'movez', 'rotate', 'scale'];
-  
-  for (const mode of zoneOrder) {
-    const zone = modeZones[mode];
-    if (zone && zone.rect) {
-      const inZone = screenX >= zone.rect.left && 
-                     screenX <= zone.rect.right &&
-                     screenY >= zone.rect.top && 
-                     screenY <= zone.rect.bottom;
-      
-      if (inZone) {
-        return mode;
-      }
-    }
-  }
-  
-  return null;
+  for(const p of pts) drawSphere(p, 5.5*scale);
+
+  sCtx.save(); sCtx.shadowColor=scheme.accent; sCtx.shadowBlur=14; sCtx.fillStyle=scheme.accent; sCtx.beginPath(); sCtx.roundRect(pts[0].x-16, pts[0].y-30, 32, 22, 10); sCtx.fill(); sCtx.restore();
+  sCtx.fillStyle='#000'; sCtx.font=`bold ${Math.max(12, 15*scale)}px "Inter",sans-serif`; sCtx.textAlign='center'; sCtx.textBaseline='middle'; sCtx.fillText(label, pts[0].x, pts[0].y-19);
+  sCtx.save(); sCtx.globalCompositeOperation='screen'; sCtx.globalAlpha=0.12; sCtx.shadowColor=scheme.glow; sCtx.shadowBlur=40; sCtx.fillStyle=scheme.glow; sCtx.beginPath(); sCtx.arc(pts[0].x, pts[0].y, handSpan*0.65, 0, Math.PI*2); sCtx.fill(); sCtx.restore();
 }
 
-// Счётчик для обновления зон
-let zoneUpdateCounter = 0;
-
-/* Детектирование кулака */
-function isFistGesture(landmarks) {
-  if (!landmarks || landmarks.length === 0) return false;
-  
-  const lm = landmarks[0];
-  
-  // Получаем ключевые точки
-  const wrist = lm[0];       // Запястье
-  const thumbTip = lm[4];    // Кончик большого пальца
-  const indexTip = lm[8];    // Кончик указательного пальца
-  const middleTip = lm[12];  // Кончик среднего пальца
-  const ringTip = lm[16];    // Кончик безымянного пальца
-  const pinkyTip = lm[20];   // Кончик мизинца
-  
-  // Проверяем, сжаты ли пальцы (кончики близко к запястью)
-  const maxFistDistance = 0.15; // Максимальное расстояние для кулака
-  
-  const thumbDistance = Math.hypot(thumbTip.x - wrist.x, thumbTip.y - wrist.y);
-  const indexDistance = Math.hypot(indexTip.x - wrist.x, indexTip.y - wrist.y);
-  const middleDistance = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y);
-  const ringDistance = Math.hypot(ringTip.x - wrist.x, ringTip.y - wrist.y);
-  const pinkyDistance = Math.hypot(pinkyTip.x - wrist.x, pinkyTip.y - wrist.y);
-  
-  // Кулак, когда все пальцы близко к запястью
-  const isFist = thumbDistance < maxFistDistance &&
-                 indexDistance < maxFistDistance &&
-                 middleDistance < maxFistDistance &&
-                 ringDistance < maxFistDistance &&
-                 pinkyDistance < maxFistDistance;
-  
-  return isFist;
+const BONE_PAL_SK = ['#fff','#ff6b6b','#ff6b6b','#ff6b6b','#ff6b6b','#4be3ff','#4be3ff','#4be3ff','#4be3ff','#a8ff78','#a8ff78','#a8ff78','#a8ff78','#f8cd57','#f8cd57','#f8cd57','#f8cd57','#c084fc','#c084fc','#c084fc','#c084fc'];
+const SKEL_CONN_SK = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
+function drawSkeletonOnly_sk(landmarks, categoryName, W, H) {
+  const label=getHandLabel(categoryName), scheme=getScheme(label), pts=landmarks.map(lm=>lmXY(lm,W,H));
+  sCtx.lineCap='round';
+  for(const[a,b] of SKEL_CONN_SK){const pa=pts[a],pb=pts[b];const g=sCtx.createLinearGradient(pa.x,pa.y,pb.x,pb.y);g.addColorStop(0,BONE_PAL_SK[a]??'#fff');g.addColorStop(1,BONE_PAL_SK[b]??'#fff');sCtx.save();sCtx.shadowColor=BONE_PAL_SK[b];sCtx.shadowBlur=8;sCtx.strokeStyle=g;sCtx.lineWidth=2.5;sCtx.globalAlpha=0.5;sCtx.beginPath();sCtx.moveTo(pa.x,pa.y);sCtx.lineTo(pb.x,pb.y);sCtx.stroke();sCtx.restore();sCtx.strokeStyle=g;sCtx.lineWidth=1.5;sCtx.globalAlpha=1;sCtx.beginPath();sCtx.moveTo(pa.x,pa.y);sCtx.lineTo(pb.x,pb.y);sCtx.stroke();}
+  for(let i=0;i<pts.length;i++){const p=pts[i],col=BONE_PAL_SK[i]??'#fff',isKey=[0,4,8,12,16,20].includes(i),r=isKey?7:4.5;sCtx.save();sCtx.shadowColor=col;sCtx.shadowBlur=isKey?18:10;sCtx.fillStyle=col;sCtx.beginPath();sCtx.arc(p.x,p.y,r,0,Math.PI*2);sCtx.fill();sCtx.restore();sCtx.fillStyle='white';sCtx.beginPath();sCtx.arc(p.x,p.y,r*0.38,0,Math.PI*2);sCtx.fill();sCtx.globalAlpha=0.75;sCtx.fillStyle=col;sCtx.font=`bold ${isKey?11:9}px 'Inter',sans-serif`;sCtx.textAlign='center';sCtx.textBaseline='top';sCtx.fillText(i,p.x,p.y+r+2);sCtx.globalAlpha=1;}
+  const w=pts[0];sCtx.save();sCtx.shadowColor=scheme.accent;sCtx.shadowBlur=14;sCtx.fillStyle=scheme.accent;sCtx.beginPath();sCtx.roundRect(w.x-14,w.y-30,28,20,8);sCtx.fill();sCtx.restore();sCtx.fillStyle='#000';sCtx.font='bold 13px "Inter",sans-serif';sCtx.textAlign='center';sCtx.textBaseline='middle';sCtx.fillText(label,w.x,w.y-20);sCtx.globalAlpha=1;sCtx.shadowBlur=0;
 }
+function drawAllHands_sk(allLM, allHand) {
+  sCtx.clearRect(0,0,skeletonCanvas.width,skeletonCanvas.height);
+  if(!showSkeleton||!allLM?.length) return;
+  const W=skeletonCanvas.width, H=skeletonCanvas.height;
+  for(let i=0;i<allLM.length;i++){const cat=allHand?.[i]?.[0]?.categoryName??'Left'; if(showMesh) drawHand3D_sk(allLM[i],cat,W,H); else drawSkeletonOnly_sk(allLM[i],cat,W,H);}
+}
+function toggleSkeletonVisibility_sk(){showSkeleton=!showSkeleton;skeletonCanvas.style.opacity=showSkeleton?'1':'0';skeletonPanelBtn.classList.toggle('active',showSkeleton);skeletonPanelBtn.innerHTML=showSkeleton?'<span class="btn-icon">🖐️</span>Скрыть':'<span class="btn-icon">🖐️</span>Показать';if(!showSkeleton)sCtx.clearRect(0,0,skeletonCanvas.width,skeletonCanvas.height);}
+function toggleMeshMode_sk(){showMesh=!showMesh;meshModeBtn.classList.toggle('active',showMesh);meshModeBtn.innerHTML=showMesh?'<span class="btn-icon">🫧</span>3D вкл':'<span class="btn-icon">🦴</span>Скелет';}
 
-/* MEDIAPIPE РАСПОЗНАВАНИЕ РУК */
+/* ── MediaPipe ── */
 let handLandmarker = null;
 let handDetectionActive = true;
-let lastHandDetectionTime = 0;
-let lastCursorUpdateTime = 0;
-const CURSOR_UPDATE_INTERVAL = 16; // ~60 FPS
+let _lastHandTime = 0;
 
 async function initHandDetection() {
   try {
     const vision = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
     );
-    
     handLandmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: { 
-        modelAssetPath: "https://storage.googleapis.com/mediapipe-assets/hand_landmarker.task" 
-      },
-      runningMode: "VIDEO", 
+      baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-assets/hand_landmarker.task" },
+      runningMode: "VIDEO",
       numHands: 1,
       minHandDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5
     });
-    
     startHandLoop();
   } catch (err) {
-    console.error("Ошибка инициализации распознавания рук:", err);
+    console.error("Ошибка инициализации рук:", err);
   }
 }
 
+/* ── Трансформации ── */
 const PINCH_THRESHOLD = 0.08;
-let isPinching = false;
+let isPinching    = false;
 let transformStart = null;
-let SMOOTHING3D_FACTOR = 0.4;
 
-/* Ускоренное сглаживание позиции курсора */
-function getSmoothedCursorPosition(rawX, rawY) {
-  // Если это первое обновление или значения сброшены
-  if (smoothingSettings.smoothedCursor.x === 0 && smoothingSettings.smoothedCursor.y === 0) {
-    smoothingSettings.smoothedCursor.x = rawX;
-    smoothingSettings.smoothedCursor.y = rawY;
-    return { x: rawX, y: rawY };
-  }
-  
-  // Очень маленькое сглаживание для быстрого отклика
-  const alpha = 0.8; // Минимальное сглаживание
-  smoothingSettings.smoothedCursor.x = exponentialSmoothingFast(
-    rawX,
-    smoothingSettings.smoothedCursor.x,
-    alpha
-  );
-  smoothingSettings.smoothedCursor.y = exponentialSmoothingFast(
-    rawY,
-    smoothingSettings.smoothedCursor.y,
-    alpha
-  );
-  
-  return { x: smoothingSettings.smoothedCursor.x, y: smoothingSettings.smoothedCursor.y };
+function getWorldPos(index, depth = -1.5) {
+  return {
+    x: (index.x - 0.5) * 2 * camera3d.position.z,
+    y: -(index.y - 0.5) * 2 * camera3d.position.z,
+    z: depth
+  };
 }
 
-/* Обновление позиции курсора на экране */
-function updateCursorPosition(screenX, screenY, scale = 1.2) {
-  const now = Date.now();
-  
-  // Ограничиваем частоту обновления курсора
-  if (now - lastCursorUpdateTime < CURSOR_UPDATE_INTERVAL) {
-    return;
-  }
-  
-  lastCursorUpdateTime = now;
-  
-  // Учитываем зеркалирование камеры
-  const displayX = cameraMirrored ? (1 - screenX) : screenX;
-  
-  // Единый способ обновления позиции курсора
-  pinchCursor.style.left = (displayX * 100) + "%";
-  pinchCursor.style.top = (screenY * 100) + "%";
-  pinchCursor.style.transform = `translate(-50%, -50%) scale(${scale})`;
-  
-  // Показываем курсор
-  if (!pinchCursor.classList.contains('visible')) {
-    pinchCursor.classList.add('visible');
-  }
-}
-
-/* Основная функция обработки руки */
-function handleHandLandmarks(landmarks) {
-  if (!landmarks || landmarks.length === 0) {
-    const now = Date.now();
-    if (now - lastHandDetectionTime > 2000) {
-      pinchCursor.classList.remove('visible');
-      
-      if (clickDetectionState.element) {
-        highlightElement(clickDetectionState.element, false);
-        clickDetectionState.element = null;
-      }
-    }
-    return;
-  }
-  
-  lastHandDetectionTime = Date.now();
-  const lm = landmarks[0];
-  
-  const isFistNow = isFistGesture(landmarks);
-  if (isFistNow !== isFistDetected) {
-      togglePanelsWithFist(isFistNow);
-  }
-  
-  const thumb = lm[4];
-  const index = lm[8];
-  // Attach drawing cursor to the index finger tip
-  const cursorX = index.x;
-  const cursorY = index.y;
-  
-  const smoothedCursor = getSmoothedCursorPosition(cursorX, cursorY);
-  
-  if (isFistNow) {
-    updateCursorPosition(smoothedCursor.x, smoothedCursor.y, 1.5);
-    
-    if (activePanel && clickDetectionState.enabled) {
-        const element = getElementAtPosition(smoothedCursor.x, smoothedCursor.y);
-        if (element && isClickableElement(element)) {
-            highlightElement(element, true);
-            clickDetectionState.element = element;
-        } else if (clickDetectionState.element) {
-            highlightElement(clickDetectionState.element, false);
-            clickDetectionState.element = null;
-        }
-    }
-    return;
-  }
-  
-  // Определяем щепок
-  const pinchDistance = Math.hypot(thumb.x - index.x, thumb.y - index.y);
-  const isPinchNow = pinchDistance < PINCH_THRESHOLD;
-  
-  // Если панели видны и включен режим кликов
-  if (clickDetectionState.enabled && panelsVisible) {
-    // Проверяем элемент под курсором
-    const element = getElementAtPosition(smoothedCursor.x, smoothedCursor.y);
-    
-    if (element && isClickableElement(element)) {
-      // Подсвечиваем элемент
-      highlightElement(element, true);
-      clickDetectionState.element = element;
-      
-      // Обработка щепка для клика
-      if (isPinchNow && !clickDetectionState.active) {
-        // Начало щепка над кликабельным элементом
-        clickDetectionState.active = true;
-        clickDetectionState.startTime = Date.now();
-        
-      } else if (!isPinchNow && clickDetectionState.active) {
-        // Завершение щепка
-        const pinchDuration = Date.now() - clickDetectionState.startTime;
-        
-        // Если щепок был достаточно длинным (не случайный)
-        if (pinchDuration >= clickDetectionState.minPinchTime && 
-            pinchDuration < clickDetectionState.clickThreshold) {
-          // Это клик!
-          handleElementClick(element, smoothedCursor.x, smoothedCursor.y);
-        }
-        
-        clickDetectionState.active = false;
-        clickDetectionState.startTime = 0;
-      }
-    } else {
-      // Курсор не над кликабельным элементом
-      if (clickDetectionState.element) {
-        highlightElement(clickDetectionState.element, false);
-        clickDetectionState.element = null;
-      }
-      
-      if (isPinchNow && clickDetectionState.active) {
-        // Щепок начался над элементом, но закончился вне его
-        clickDetectionState.active = false;
-        clickDetectionState.startTime = 0;
-      }
-    }
-    
-    // Обновляем позицию курсора
-    updateCursorPosition(smoothedCursor.x, smoothedCursor.y, isPinchNow ? 1.8 : 1.2);
-    
-    // В режиме кликов не обрабатываем рисование/трансформацию
-    return;
-  }
-  
-  // Стандартная логика (когда панели скрыты или режим кликов выключен)
-  
-  // Обновляем зоны периодически
-  zoneUpdateCounter++;
-  if (zoneUpdateCounter >= 10) {
-    zoneUpdateCounter = 0;
-    Object.keys(modeZones).forEach(mode => updateZoneRect(mode));
-  }
-  
-  // Определяем зону для переключения режима
-  if (!isPinchNow && !isPinching) {
-    const hoveredZone = getZoneFromPosition(smoothedCursor.x, smoothedCursor.y);
-    
-    if (hoveredZone && hoveredZone !== currentMode && currentMode !== 'draw') {
-      setMode(hoveredZone);
-    }
-  }
-  
-  // Анимация щипка
-  if (isPinchNow) {
-    updateCursorPosition(smoothedCursor.x, smoothedCursor.y, 1.8);
-    
-    const worldPos = getWorldPositionFromFingers(thumb, index, -1.5);
-    
-    if (currentMode === 'draw') {
-      handleDrawing(worldPos, !isPinching);
-    } else if (activeObject) {
-      handleObjectTransform(worldPos, !isPinching);
-    }
-    
-    isPinching = true;
-  } else {
-    updateCursorPosition(smoothedCursor.x, smoothedCursor.y, 1.2);
-    
-    if (isPinching) {
-      if (currentMode === 'draw' && currentTube) {
-        finishDrawing();
-      }
-      isPinching = false;
-      transformStart = null;
-    }
-  }
-}
-
-/* Получение позиции в 3D пространстве */
-function getWorldPositionFromFingers(thumb, index, depth = -1.5) {
-  // Attach world position to the index finger tip rather than midpoint
-  const x = (index.x - 0.5) * 2 * camera.position.z;
-  const y = -(index.y - 0.5) * 2 * camera.position.z;
-  
-  return { x, y, z: depth };
-}
-
-/* Обработка рисования */
-function handleDrawing(position, isStart) {
+function handleDrawing(pos, isStart) {
   if (isStart) {
-    tubePoints = [new THREE.Vector3(position.x, position.y, position.z)];
+    tubePoints  = [new THREE.Vector3(pos.x, pos.y, pos.z)];
     currentTube = null;
-  } else if (tubePoints.length > 0) {
-    const lastPoint = tubePoints[tubePoints.length - 1];
-    // Smoothed new point based on last point
-    const nx = lastPoint.x * (1 - SMOOTHING3D_FACTOR) + position.x * SMOOTHING3D_FACTOR;
-    const ny = lastPoint.y * (1 - SMOOTHING3D_FACTOR) + position.y * SMOOTHING3D_FACTOR;
-    const nz = lastPoint.z * (1 - SMOOTHING3D_FACTOR) + position.z * SMOOTHING3D_FACTOR;
-    const newPoint = new THREE.Vector3(nx, ny, nz);
-    
-    if (lastPoint.distanceTo(newPoint) > 0.05) {
-      tubePoints.push(newPoint);
-      
-      if (tubePoints.length >= 2) {
-        if (currentTube) {
-          scene.remove(currentTube);
-        }
-        
-        currentTube = createTubeFromPoints(tubePoints, brushSettings.color, brushSettings.width);
-        if (currentTube) {
-          scene.add(currentTube);
-        }
-      }
-    }
+    return;
   }
+  if (!tubePoints.length) return;
+  const last = tubePoints.at(-1);
+  const f    = smoothing.factor;
+  const np   = new THREE.Vector3(
+    lerp(pos.x, last.x, 1 - f),
+    lerp(pos.y, last.y, 1 - f),
+    lerp(pos.z, last.z, 1 - f)
+  );
+  if (last.distanceTo(np) < 0.05) return;
+  tubePoints.push(np);
+  if (tubePoints.length < 2) return;
+  if (currentTube) scene.remove(currentTube);
+  currentTube = createTubeFromPoints(tubePoints, brushSettings.color, brushSettings.width);
+  if (currentTube) scene.add(currentTube);
 }
 
 function finishDrawing() {
   if (currentTube && tubePoints.length >= 2) {
     const obj = {
-      mesh: currentTube,
-      type: 'tube',
-      name: `Линия ${objects.filter(o => o.type === 'tube').length + 1}`,
-      id: Date.now() + Math.random()
+      mesh: currentTube, type: "tube",
+      name: `Линия ${objects.filter(o => o.type === "tube").length + 1}`,
+      id: Date.now()
     };
-    
     objects.push(obj);
     setActive(obj);
     updateObjectsList();
   }
-  
   currentTube = null;
-  tubePoints = [];
+  tubePoints  = [];
 }
 
-/* Обработка трансформации объектов */
-function handleObjectTransform(position, isStart) {
+function handleTransform(pos, isStart) {
   if (isStart) {
     transformStart = {
       position: activeObject.mesh.position.clone(),
       rotation: activeObject.mesh.rotation.clone(),
-      scale: activeObject.mesh.scale.x,
-      handPos: position
+      scale:    activeObject.mesh.scale.x,
+      handPos:  pos
     };
-    smoothingSettings.smoothedPosition.copy(activeObject.mesh.position);
-  } else if (transformStart) {
-    const deltaX = position.x - transformStart.handPos.x;
-    const deltaY = position.y - transformStart.handPos.y;
-    const mirroredDeltaX = cameraMirrored ? -deltaX : deltaX;
-    
-    switch(currentMode) {
-      case 'movexy':
-        const targetX = transformStart.position.x + mirroredDeltaX * 2.5;
-        const targetY = transformStart.position.y + deltaY * 2.5;
-        
-        smoothingSettings.smoothedPosition.x = exponentialSmoothingFast(
-          targetX,
-          smoothingSettings.smoothedPosition.x,
-          smoothingSettings.positionSmoothness
-        );
-        smoothingSettings.smoothedPosition.y = exponentialSmoothingFast(
-          targetY,
-          smoothingSettings.smoothedPosition.y,
-          smoothingSettings.positionSmoothness
-        );
-        
-        activeObject.mesh.position.x = smoothingSettings.smoothedPosition.x;
-        activeObject.mesh.position.y = smoothingSettings.smoothedPosition.y;
-        break;
-        
-      case 'movez':
-        const targetZ = transformStart.position.z + deltaY * 3.5;
-        smoothingSettings.smoothedPosition.z = exponentialSmoothingFast(
-          targetZ,
-          smoothingSettings.smoothedPosition.z,
-          smoothingSettings.positionSmoothness
-        );
-        activeObject.mesh.position.z = smoothingSettings.smoothedPosition.z;
-        break;
-        
-      case 'rotate':
-        activeObject.mesh.rotation.y = transformStart.rotation.y + mirroredDeltaX * 3.5;
-        activeObject.mesh.rotation.x = transformStart.rotation.x + deltaY * 3.5;
-        break;
-        
-      case 'scale':
-        const newScale = Math.max(0.1, transformStart.scale + deltaY * 3.5);
-        activeObject.mesh.scale.setScalar(newScale);
-        break;
+    smoothing.pos.copy(activeObject.mesh.position);
+    return;
+  }
+  if (!transformStart) return;
+
+  const dx  = pos.x - transformStart.handPos.x;
+  const dy  = pos.y - transformStart.handPos.y;
+  const mdx = cameraMirrored ? -dx : dx;
+  const f   = smoothing.factor;
+
+  switch (currentMode) {
+    case "movexy":
+      smoothing.pos.x = lerp(transformStart.position.x + mdx * 2.5, smoothing.pos.x, 1 - f);
+      smoothing.pos.y = lerp(transformStart.position.y + dy  * 2.5, smoothing.pos.y, 1 - f);
+      activeObject.mesh.position.x = smoothing.pos.x;
+      activeObject.mesh.position.y = smoothing.pos.y;
+      break;
+    case "movez":
+      smoothing.pos.z = lerp(transformStart.position.z + dy * 3.5, smoothing.pos.z, 1 - f);
+      activeObject.mesh.position.z = smoothing.pos.z;
+      break;
+    case "rotate":
+      activeObject.mesh.rotation.y = transformStart.rotation.y + mdx * 3.5;
+      activeObject.mesh.rotation.x = transformStart.rotation.x + dy  * 3.5;
+      break;
+    case "scale":
+      activeObject.mesh.scale.setScalar(Math.max(0.1, transformStart.scale + dy * 3.5));
+      break;
+  }
+}
+
+/* ── Основная логика руки ── */
+let _zoneCounter = 0;
+
+function handleHandLandmarks(landmarks) {
+  if (!landmarks?.length) {
+    if (performance.now() - _lastHandTime > 2000) {
+      pinchCursor.classList.remove("visible");
+      if (clickState.lastEl) { clickState.lastEl.classList.remove("highlighted"); clickState.lastEl = null; }
+      resetAllZones();
+    }
+    return;
+  }
+  _lastHandTime = performance.now();
+
+  const lm    = landmarks[0];
+  const thumb = lm[4];
+  const index = lm[8];
+
+  /* Кулак — теперь только визуальная вспышка курсора (как в 2D) */
+  const fistNow = isFistGesture(landmarks);
+  if (fistNow !== isFistDetected) togglePanelsWithFist(fistNow);
+
+  const sc = getSmoothedCursor(index.x, index.y);
+
+  /* 🔵 Hot-zones (удержание для открытия/закрытия панелей — логика 2D) */
+  const sxScreen = (cameraMirrored ? 1 - sc.x : sc.x) * window.innerWidth;
+  const syScreen = sc.y * window.innerHeight;
+  if (fistNow) {
+    /* В 2D кулак сбрасывает зоны и блокирует другую логику */
+    resetAllZones();
+    updateCursorPosition(sc.x, sc.y, 1.5);
+    return;
+  }
+  tickHotZones(sxScreen, syScreen);
+  if (activeZone) {
+    updateCursorPosition(sc.x, sc.y, 1.2);
+    return;
+  }
+
+  /* Щепок */
+  const pinchDist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
+  const pinchNow  = pinchDist < PINCH_THRESHOLD;
+
+  /* Режим кликов (панели открыты) */
+  if (clickState.enabled && panelsVisible) {
+    const el = getElementAtPosition(sc.x, sc.y);
+    if (el && isClickable(el)) {
+      highlightElement(el, true);
+      clickState.element = el;
+      if (pinchNow && !clickState.active) {
+        clickState.active    = true;
+        clickState.startTime = Date.now();
+      } else if (!pinchNow && clickState.active) {
+        const dur = Date.now() - clickState.startTime;
+        if (dur >= clickState.minTime && dur < clickState.threshold)
+          handleElementClick(el, sc.x, sc.y);
+        clickState.active = false;
+      }
+    } else {
+      if (clickState.lastEl) { highlightElement(clickState.lastEl, false); clickState.element = null; }
+      if (!pinchNow) clickState.active = false;
+    }
+    updateCursorPosition(sc.x, sc.y, pinchNow ? 1.8 : 1.2);
+    return;
+  }
+
+  /* Обновляем rects зон каждые 10 кадров */
+  if (++_zoneCounter >= 10) { _zoneCounter = 0; refreshZoneRects(); }
+
+  /* Автопереключение режима при наведении */
+  if (!pinchNow && !isPinching) {
+    const zone = getZoneFromPosition(sc.x, sc.y);
+    if (zone && zone !== currentMode && currentMode !== "draw") setMode(zone);
+  }
+
+  if (pinchNow) {
+    updateCursorPosition(sc.x, sc.y, 1.8);
+    const wp = getWorldPos(index, -1.5);
+    if (currentMode === "draw")    handleDrawing(wp, !isPinching);
+    else if (activeObject)         handleTransform(wp, !isPinching);
+    isPinching = true;
+  } else {
+    updateCursorPosition(sc.x, sc.y, 1.2);
+    if (isPinching) {
+      if (currentMode === "draw" && currentTube) finishDrawing();
+      isPinching     = false;
+      transformStart = null;
     }
   }
 }
 
-/* Цикл распознавания рук */
+/* ── Цикл распознавания ── */
 function startHandLoop() {
   function loop() {
-    if (handLandmarker && video.readyState >= 2 && handDetectionActive) {
+    if (handLandmarker && videoReady && handDetectionActive) {
       try {
-        const results = handLandmarker.detectForVideo(video, performance.now());
-        if (results.landmarks && results.landmarks.length > 0) {
-          handleHandLandmarks(results.landmarks);
-        } else {
-          pinchCursor.classList.remove('visible');
-        }
-      } catch (err) {
-        console.warn("Ошибка распознавания руки:", err);
+        const res = handLandmarker.detectForVideo(video, performance.now());
+        handleHandLandmarks(res.landmarks?.length ? res.landmarks : null);
+        drawAllHands_sk(res.landmarks?.length ? res.landmarks : null, res.handednesses);
+      } catch (e) {
+        console.warn("Hand detection error:", e);
       }
     }
     requestAnimationFrame(loop);
@@ -1986,132 +1987,53 @@ function startHandLoop() {
   loop();
 }
 
-function activateFreeMove() {
-  if (typeof setMode === 'function') {
-    setMode('movexy');
-  } else {
-    currentMode = 'movexy';
-    const modeTextEl = document.getElementById('modeText');
-    if (modeTextEl) modeTextEl.textContent = 'Режим: Свободное перемещение';
-  }
-  showHoverIndicator('Свободное перемещение включено');
-}
-
-/* ЭКСПОРТ ИЗОБРАЖЕНИЙ */
-window.saveWithBackground = () => {
-  const canvas = document.createElement("canvas");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const ctx = canvas.getContext("2d");
-  
-  if (cameraEnabled && video.videoWidth > 0) {
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  }
-  
-  ctx.drawImage(renderer.domElement, 0, 0);
-  
-  downloadCanvas(canvas, "scene-with-background.png");
-};
-
-window.saveTransparent = () => {
-  downloadCanvas(renderer.domElement, "scene-transparent.png");
-};
-
-window.saveWithColorBg = () => {
-  const canvas = document.createElement("canvas");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const ctx = canvas.getContext("2d");
-  
-  ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  ctx.drawImage(renderer.domElement, 0, 0);
-  
-  downloadCanvas(canvas, "scene-colored-bg.png");
-};
-
-function downloadCanvas(canvasElement, filename) {
-  const link = document.createElement("a");
-  link.download = filename;
-  link.href = canvasElement.toDataURL("image/png");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-/* ОБРАБОТЧИКИ ОКНА */
+/* ── Resize ── */
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  Object.keys(modeZones).forEach(mode => updateZoneRect(mode));
+  camera3d.aspect = innerWidth / innerHeight;
+  camera3d.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  skeletonCanvas.width  = innerWidth;
+  skeletonCanvas.height = innerHeight;
+  refreshZoneRects();
 });
 
-/* ИНИЦИАЛИЗАЦИЯ */
+/* ── Init ── */
 async function init() {
+  skeletonCanvas.width  = innerWidth;
+  skeletonCanvas.height = innerHeight;
+  skeletonPanelBtn.addEventListener('click', toggleSkeletonVisibility_sk);
+  meshModeBtn.addEventListener('click', toggleMeshMode_sk);
+
   await initCamera();
+
+  video.addEventListener("canplay", () => { videoReady = true; }, { once: false });
+  if (video.readyState >= 3) videoReady = true;
+
   await initHandDetection();
-  
+
   initModeZones();
-  
-  // Ждём рендеринга для корректных bounding rect
-  setTimeout(() => {
-    Object.keys(modeZones).forEach(mode => updateZoneRect(mode));
-  }, 100);
-  
-  setMode('rotate');
+  setTimeout(refreshZoneRects, 100);
+
+  setMode("rotate");
   updateObjectsList();
-  
-  // Инициализируем курсор в центре экрана
   updateCursorPosition(0.5, 0.5, 1);
-  pinchCursor.classList.add('visible');
-  
-  // Запускаем анимацию
-  function animate() {
-    renderer.render(scene, camera);
+  pinchCursor.classList.add("visible");
+
+  (function animate() {
+    renderer.render(scene, camera3d);
     requestAnimationFrame(animate);
-  }
-  animate();
+  })();
 }
 
-// Запуск приложения после загрузки DOM
-document.addEventListener('DOMContentLoaded', async () => {
-  // Обработчик кнопки показа/скрытия панелей
-  toggleSidebar.addEventListener('click', () => {
-    const toolsVisible = toolsPanel.classList.contains('visible');
-    const settingsVisible = settingsPanel.classList.contains('visible');
-    const bothVisible = toolsVisible && settingsVisible;
-
-    if (!toolsVisible && !settingsVisible) {
-      // Open both panels (as in fist gesture)
-      toolsPanel.classList.add('visible');
-      settingsPanel.classList.add('visible');
-      activePanel = 'tools';
-      panelsVisible = true;
-      clickDetectionState.enabled = true;
-    } else if (bothVisible) {
-      // Close both panels
-      toolsPanel.classList.remove('visible');
-      settingsPanel.classList.remove('visible');
-      activePanel = null;
-      panelsVisible = false;
-      clickDetectionState.enabled = false;
-    } else {
-      // If only one is visible, also show both for consistency
-      toolsPanel.classList.add('visible');
-      settingsPanel.classList.add('visible');
-      activePanel = 'tools';
-      panelsVisible = true;
-      clickDetectionState.enabled = true;
-    }
+document.addEventListener("DOMContentLoaded", async () => {
+  toggleSidebar.addEventListener("click", () => {
+    setPanelsVisible(!(toolsPanel.classList.contains("visible") && settingsPanel.classList.contains("visible")));
   });
-  
+
   await init();
-  
-  // Инициализация значений в UI
-  document.getElementById("brushWidthValue").textContent = brushSettings.width.toFixed(2);
-  document.getElementById("smoothnessValue").textContent = smoothingSettings.positionSmoothness.toFixed(2);
+
+  document.getElementById("brushWidthValue").textContent   = brushSettings.width.toFixed(2);
+  document.getElementById("smoothnessValue").textContent   = smoothing.factor.toFixed(2);
 });
 </script>
 </body>
