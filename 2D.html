@@ -186,9 +186,9 @@ html, body {
   background: rgba(12, 16, 24, 0.85);
   backdrop-filter: blur(10px);
   color: var(--accent-primary);
-  padding: 6px 20px;
-  border-radius: 18px;
-  font-size: 11px;
+  padding: 8px 22px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -208,7 +208,7 @@ html, body {
   padding-top: 67px;
 }
 .section { display: flex; flex-direction: column; gap: 14px; }
-.section-title { font-size: 15px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #fff; padding-left: 6px; border-left: 3px solid var(--accent-primary); line-height: 1.2; text-shadow: 0 0 12px rgba(75,227,255,0.4); }
+.section-title { font-size: 17px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: #fff; padding-left: 6px; border-left: 3px solid var(--accent-primary); line-height: 1.2; text-shadow: 0 0 12px rgba(75,227,255,0.4); }
 .button-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
 .button-row { display: flex; gap: 10px; }
 /* Прозрачные стеклянные кнопки — liquid glass */
@@ -222,11 +222,11 @@ html, body {
   transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1),
               background 0.3s ease, border-color 0.3s ease,
               box-shadow 0.35s ease, color 0.3s ease;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 600;
   text-align: center;
   flex: 1;
-  min-height: 56px;
+  min-height: 62px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -371,8 +371,8 @@ html, body {
 .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
 .color-picker::-webkit-color-swatch { border: none; border-radius: 14px; min-height: 40px; }
 .slider-container { position: relative; margin-top: 4px; }
-.slider-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-soft); padding: 0 2px; }
-.slider-value { color: var(--accent-primary); font-weight: 700; background: rgba(75,227,255,0.15); padding: 3px 10px; border-radius: 30px; font-size: 12px; border: 1px solid rgba(75,227,255,0.4); }
+.slider-label { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; color: var(--text-soft); padding: 0 2px; }
+.slider-value { color: var(--accent-primary); font-weight: 700; background: rgba(75,227,255,0.15); padding: 4px 12px; border-radius: 30px; font-size: 14px; border: 1px solid rgba(75,227,255,0.4); }
 .slider {
   width: 100%; height: 8px;
   border-radius: 10px;
@@ -427,7 +427,7 @@ html, body {
   background: rgba(75,227,255,0.3);
 }
 .toggle-group { display: flex; align-items: center; justify-content: space-between; padding: 10px 6px; background: rgba(0,0,0,0.25); border-radius: 40px; border: 1px solid rgba(255,255,255,0.08); }
-.toggle-label { font-size: 15px; font-weight: 600; color: var(--text-soft); }
+.toggle-label { font-size: 17px; font-weight: 600; color: var(--text-soft); }
 .toggle-btn {
   position: relative;
   width: 58px; height: 32px;
@@ -568,6 +568,17 @@ html, body {
         <button class="btn" id="redoBtn"><span class="btn-icon">↷</span>Вперёд</button>
       </div>
     </div>
+    <div class="section">
+      <div class="section-title">Фон</div>
+      <div class="toggle-group">
+        <span class="toggle-label">Цветной фон</span>
+        <div class="toggle-btn" id="bgToggleBtn"></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="slider-label">Цвет фона</div>
+        <input type="color" id="bgColorPicker" class="color-picker" value="#0b0b10">
+      </div>
+    </div>
   </div>
   <div id="settingsPanel">
     <div class="panel-indicator">⚙️ ПАНЕЛЬ НАСТРОЕК</div>
@@ -586,14 +597,10 @@ html, body {
       </div>
     </div>
     <div class="section">
-      <div class="section-title">Фон</div>
+      <div class="section-title">Жесты</div>
       <div class="toggle-group">
-        <span class="toggle-label">Цветной фон</span>
-        <div class="toggle-btn" id="bgToggleBtn"></div>
-      </div>
-      <div style="margin-top:10px">
-        <div class="slider-label">Цвет фона</div>
-        <input type="color" id="bgColorPicker" class="color-picker" value="#0b0b10">
+        <span class="toggle-label">💎 Щелчок бесконечности</span>
+        <div class="toggle-btn active" id="snapGestureToggle"></div>
       </div>
     </div>
     <div class="section">
@@ -631,6 +638,19 @@ let cachedColorRgb = hexToRgb(state.color);
 let isCameraEnabled=true, isCameraMirrored=false, isBackgroundEnabled=false, bgColor="#0b0b10", currentMode='drawing';
 let wasFist=false, fistToggleCooldown=0;
 let showSkeleton=true, showMesh=true;
+// 💎 Snap/dissolve state — объявлено заранее, иначе resizeCanvas() при загрузке вызывает draw() в TDZ
+let snapGestureEnabled=true;
+const SNAP={
+  state:'IDLE', charge:0, chargeStart:0,
+  CHARGE_MS:1500,           // длительность зарядки
+  STATIONARY_THR:0.09,      // допустимая дрожь руки (нормализованные координаты)
+  history:[], HIST_SIZE:14,
+  SNAP_DIST:0.09,           // дистанция большой↔средний для щелчка
+  EXTENDED_DIST:0.13,       // насколько вытянутые пальцы засчитываются как раскрытая ладонь
+  PALM_THR:0.0015,          // порог cross-product для «ладонь к камере»
+  lastHint:'', lastHintTime:0,
+};
+let dissolveActive=false, dissolveStart=0, dissolveParticles=[], snapFlashAlpha=0;
 
 // ── DOM ────────────────────────────────────────────────────────────────
 const pinchCursor=document.getElementById("pinchCursor");
@@ -730,6 +750,13 @@ function toggleMeshMode(){showMesh=!showMesh;meshModeBtn.classList.toggle('activ
 skeletonToggle.addEventListener('click',()=>toggleSkeletonVisibility());
 skeletonPanelBtn.addEventListener('click',()=>toggleSkeletonVisibility());
 meshModeBtn.addEventListener('click',()=>toggleMeshMode());
+const snapGestureToggle=document.getElementById('snapGestureToggle');
+snapGestureToggle.addEventListener('click',()=>{
+  snapGestureEnabled=!snapGestureEnabled;
+  snapGestureToggle.classList.toggle('active',snapGestureEnabled);
+  showHoverIndicator(snapGestureEnabled?'💎 Жест включён':'💎 Жест выключен');
+  if(!snapGestureEnabled){SNAP.state='IDLE';SNAP.charge=0;SNAP.history.length=0;}
+});
 
 // ── HOT ZONES ──────────────────────────────────────────────────────────
 const HOLD_DURATION_MS=1200, CIRCUMFERENCE=200;
@@ -805,11 +832,23 @@ function dRect(a,c,W,H){c.strokeRect(Math.min(a.start.x,a.end.x)*W,Math.min(a.st
 function dCircle(a,c,W,H){c.beginPath();c.arc((a.start.x+a.end.x)/2*W,(a.start.y+a.end.y)/2*H,Math.hypot(a.end.x-a.start.x,a.end.y-a.start.y)*W/2,0,Math.PI*2);c.stroke();}
 function dTriangle(a,c,W,H){const x1=a.start.x*W,y1=a.start.y*H,x2=a.end.x*W,y2=a.end.y*H;c.beginPath();c.moveTo(x1,y2);c.lineTo((x1+x2)/2,y1);c.lineTo(x2,y2);c.closePath();c.stroke();}
 function dArrow(a,c,W,H){const sx=a.start.x*W,sy=a.start.y*H,ex=a.end.x*W,ey=a.end.y*H;const len=Math.hypot(ex-sx,ey-sy);if(len<1)return;const angle=Math.atan2(ey-sy,ex-sx),hl=Math.max(8,Math.min(len*.2,120));c.beginPath();c.moveTo(sx,sy);c.lineTo(ex,ey);c.lineTo(ex-hl*Math.cos(angle-Math.PI/6),ey-hl*Math.sin(angle-Math.PI/6));c.moveTo(ex,ey);c.lineTo(ex-hl*Math.cos(angle+Math.PI/6),ey-hl*Math.sin(angle+Math.PI/6));c.stroke();}
-function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);if(state.backgroundImage)ctx.drawImage(state.backgroundImage,0,0,canvas.width,canvas.height);state.actions.forEach(a=>drawAction(a));if(state.current)drawAction(state.current,ctx,canvas,true);historyCountEl.textContent=state.actions.length;}
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(state.backgroundImage)ctx.drawImage(state.backgroundImage,0,0,canvas.width,canvas.height);
+  let lineOpacity=1;
+  if(dissolveActive)lineOpacity=updateDissolve();
+  if(lineOpacity>0&&state.actions.length>0){
+    if(lineOpacity<1){ctx.save();ctx.globalAlpha=lineOpacity;state.actions.forEach(a=>drawAction(a));ctx.restore();}
+    else state.actions.forEach(a=>drawAction(a));
+  }
+  if(state.current)drawAction(state.current,ctx,canvas,true);
+  if(dissolveActive)drawDissolveParticles();
+  historyCountEl.textContent=state.actions.length;
+}
 
 // ── GESTURE ENGINE ──────────────────────────────────────────────────────
 const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm");
-const hand=await HandLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-assets/hand_landmarker.task"},runningMode:"VIDEO",numHands:1,minHandDetectionConfidence:0.5,minTrackingConfidence:0.5});
+const hand=await HandLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-assets/hand_landmarker.task"},runningMode:"VIDEO",numHands:2,minHandDetectionConfidence:0.5,minTrackingConfidence:0.5});
 const PINCH_THRESHOLD=0.08,SMOOTHING_FACTOR=0.3,FIST_MAX_DIST=0.15,FIST_TIPS=[4,8,12,16,20];
 // Двойная экспоненциальная фильтрация — как в 3D, ощутимо убирает дрожь
 let drawing=false,lastPoint=null,smoothCursor={x:0.5,y:0.5},_lastCursorTime=0;
@@ -817,11 +856,246 @@ const CURSOR_UPDATE_INTERVAL=16;
 function isFistGesture(lm){const w=lm[0];return FIST_TIPS.every(i=>Math.hypot(lm[i].x-w.x,lm[i].y-w.y)<FIST_MAX_DIST);}
 function cloneAction(a){return a.type==='pen'?{...a,points:a.points.map(p=>({...p}))}:{...a,start:{...a.start},end:{...a.end}};}
 
+// ── 💎 INFINITY SNAP GESTURE ──────────────────────────────────────────
+// Открытая правая ладонь к камере + удержание 2с → появляются 6 камней,
+// затем щелчок (большой+средний палец) → все линии исчезают пылью.
+// (SNAP / dissolveActive объявлены выше, чтобы draw() при первом ресайзе не упал в TDZ)
+// Камни на основаниях пальцев + один в центре ладони
+const STONES=[
+  {lm:5,      rgb:'255,48,48',  glow:'#ff3030'}, // Reality (red)    — основание указательного
+  {lm:9,      rgb:'255,215,0',  glow:'#ffd700'}, // Mind (yellow)    — основание среднего
+  {lm:13,     rgb:'0,255,128',  glow:'#00ff80'}, // Time (green)     — основание безымянного
+  {lm:17,     rgb:'255,128,0',  glow:'#ff8000'}, // Soul (orange)    — основание мизинца
+  {lm:2,      rgb:'160,32,255', glow:'#a020ff'}, // Power (purple)   — основание большого
+  {lm:'palm', rgb:'48,128,255', glow:'#3080ff'}, // Space (blue)     — центр ладони
+];
+const DISSOLVE_MS=2000;
+
+function getUserHandLabel(c){if(!c)return'?';return isCameraMirrored?(c==='Left'?'R':'L'):(c==='Left'?'L':'R');}
+function detectPalmFacing(lm){
+  const w=lm[0],iM=lm[5],pM=lm[17];
+  const cross=(iM.x-w.x)*(pM.y-w.y)-(iM.y-w.y)*(pM.x-w.x);
+  // Правая рука ладонью к камере: cross < 0 без зеркала, > 0 с зеркалом
+  return isCameraMirrored?cross>SNAP.PALM_THR:cross<-SNAP.PALM_THR;
+}
+function detectSnap(lm){return Math.hypot(lm[4].x-lm[12].x,lm[4].y-lm[12].y)<SNAP.SNAP_DIST;}
+function detectFingersExtended(lm){
+  // Минимум 3 из 4 пальцев должны быть вытянуты — чтобы лёгкое согнутие не отменяло жест
+  const w=lm[0];
+  const ok=[8,12,16,20].filter(i=>Math.hypot(lm[i].x-w.x,lm[i].y-w.y)>SNAP.EXTENDED_DIST).length;
+  return ok>=3;
+}
+function snapHint(text){
+  // Подсказка обновляется не чаще раза в 600 мс, чтобы не дёргать DOM
+  const now=performance.now();
+  if(text===SNAP.lastHint||now-SNAP.lastHintTime<600)return;
+  SNAP.lastHint=text;SNAP.lastHintTime=now;
+  showHoverIndicator(text);
+}
+function updateSnapGesture(lm,userHand){
+  if(userHand!=='R'){
+    if(SNAP.state!=='SNAPPING'){SNAP.state='IDLE';SNAP.charge=0;SNAP.history.length=0;SNAP.lastHint='';}
+    return;
+  }
+  const w=lm[0];
+  SNAP.history.push({x:w.x,y:w.y});
+  if(SNAP.history.length>SNAP.HIST_SIZE)SNAP.history.shift();
+  let stationary=false;
+  if(SNAP.history.length>=SNAP.HIST_SIZE){
+    const f=SNAP.history[0];let m=0;
+    for(const p of SNAP.history){const d=Math.hypot(p.x-f.x,p.y-f.y);if(d>m)m=d;}
+    stationary=m<SNAP.STATIONARY_THR;
+  }
+  const palm=detectPalmFacing(lm),ext=detectFingersExtended(lm);
+  switch(SNAP.state){
+    case'IDLE':
+      if(palm&&stationary&&ext){
+        SNAP.state='CHARGING';SNAP.chargeStart=performance.now();SNAP.charge=0;
+      } else if(palm&&ext){
+        snapHint('⏸ Замри на 1.5 с');
+      } else if(palm){
+        snapHint('✋ Раскрой пальцы');
+      } else if(ext){
+        snapHint('🖐️ Поверни ладонь к камере');
+      }
+      break;
+    case'CHARGING':
+      if(palm&&ext){
+        SNAP.charge=Math.min((performance.now()-SNAP.chargeStart)/SNAP.CHARGE_MS,1);
+        if(SNAP.charge>=1)SNAP.state='READY';
+      } else {
+        // Плавное угасание заряда вместо мгновенного сброса — терпим короткие сбои трекинга
+        SNAP.charge=Math.max(0,SNAP.charge-0.05);
+        if(SNAP.charge<=0){SNAP.state='IDLE';}
+        else {SNAP.chargeStart=performance.now()-SNAP.charge*SNAP.CHARGE_MS;}
+      }
+      break;
+    case'READY':
+      snapHint('✨ Щёлкни большим и средним');
+      if(detectSnap(lm)){SNAP.state='SNAPPING';triggerSnap();}
+      break;
+  }
+}
+function triggerSnap(){
+  startDissolve();
+  showHoverIndicator('💥 SNAP — линии исчезают');
+  snapFlashAlpha=0.8;
+  setTimeout(()=>{SNAP.state='IDLE';SNAP.charge=0;SNAP.history.length=0;},2400);
+}
+
+function drawInfinityGems(lm){
+  if(SNAP.state==='IDLE'||SNAP.charge<=0)return;
+  const W=skeletonCanvas.width,H=skeletonCanvas.height,t=performance.now()*0.003;
+  // Центр ладони — среднее между запястьем и MCP среднего пальца с лёгким смещением к ладони
+  const palmX=(lm[0].x+lm[9].x)*0.5, palmY=(lm[0].y+lm[9].y)*0.5;
+  STONES.forEach((s,i)=>{
+    const sc=Math.max(0,Math.min(1,SNAP.charge*6-i));
+    if(sc<=0)return;
+    const p=(s.lm==='palm')?{x:palmX,y:palmY}:lm[s.lm];
+    if(!p)return;
+    const sx=(isCameraMirrored?(1-p.x):p.x)*W,sy=p.y*H;
+    const wob=0.92+Math.sin(t+i)*0.08;
+    const r=(8+sc*7)*wob;
+    sCtx.save();
+    sCtx.shadowColor=s.glow;sCtx.shadowBlur=28*sc;
+    sCtx.fillStyle=`rgba(${s.rgb},${sc*0.45})`;
+    sCtx.beginPath();sCtx.arc(sx,sy,r*1.9,0,Math.PI*2);sCtx.fill();
+    sCtx.fillStyle=`rgba(${s.rgb},${sc})`;
+    sCtx.beginPath();sCtx.arc(sx,sy,r,0,Math.PI*2);sCtx.fill();
+    sCtx.fillStyle=`rgba(255,255,255,${sc*0.85})`;
+    sCtx.beginPath();sCtx.arc(sx-r*0.32,sy-r*0.32,r*0.32,0,Math.PI*2);sCtx.fill();
+    sCtx.restore();
+  });
+  if(SNAP.state==='READY'){
+    const w=lm[0];
+    const wsx=(isCameraMirrored?(1-w.x):w.x)*W,wsy=w.y*H;
+    const pulse=0.6+0.4*Math.sin(t*4);
+    sCtx.save();
+    sCtx.strokeStyle=`rgba(255,200,80,${pulse*0.7})`;
+    sCtx.lineWidth=3*pulse;sCtx.shadowColor='#ffaa30';sCtx.shadowBlur=30;
+    sCtx.beginPath();sCtx.arc(wsx,wsy-70,95,0,Math.PI*2);sCtx.stroke();
+    sCtx.restore();
+  }
+}
+
+// ── DISSOLVE ──────────────────────────────────────────────────────────
+function sampleAction(a){
+  const W=canvas.width,H=canvas.height,r=[];
+  if(a.type==='pen'&&a.points){a.points.forEach(p=>r.push({x:p.x*W,y:p.y*H}));}
+  else if(a.start&&a.end){
+    const x1=a.start.x*W,y1=a.start.y*H,x2=a.end.x*W,y2=a.end.y*H;
+    if(a.type==='rect'){
+      const N=42;
+      for(let i=0;i<N;i++){const t=i/N;let x,y;
+        if(t<0.25){x=x1+(x2-x1)*t*4;y=y1;}
+        else if(t<0.5){x=x2;y=y1+(y2-y1)*(t-0.25)*4;}
+        else if(t<0.75){x=x2-(x2-x1)*(t-0.5)*4;y=y2;}
+        else{x=x1;y=y2-(y2-y1)*(t-0.75)*4;}
+        r.push({x,y});
+      }
+    }else if(a.type==='circle'){
+      const cx=(x1+x2)/2,cy=(y1+y2)/2,rr=Math.hypot(x2-x1,y2-y1)/2,N=50;
+      for(let i=0;i<N;i++){const ang=i/N*Math.PI*2;r.push({x:cx+Math.cos(ang)*rr,y:cy+Math.sin(ang)*rr});}
+    }else if(a.type==='triangle'){
+      const apex={x:(x1+x2)/2,y:y1},left={x:x1,y:y2},right={x:x2,y:y2};
+      [[apex,left],[left,right],[right,apex]].forEach(([a,b])=>{const N=18;for(let i=0;i<N;i++){const t=i/N;r.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});}});
+    }else{const N=36;for(let i=0;i<=N;i++){const t=i/N;r.push({x:x1+(x2-x1)*t,y:y1+(y2-y1)*t});}}
+  }
+  return r;
+}
+
+function startDissolve(){
+  if(dissolveActive)return;
+  if(state.actions.length===0&&!state.current)return;
+  const all=state.actions.slice();if(state.current)all.push(state.current);
+  const ps=[];
+  all.forEach(a=>{
+    const samples=sampleAction(a);
+    samples.forEach(pt=>{
+      const cnt=1+Math.floor(Math.random()*2);
+      for(let i=0;i<cnt;i++){
+        ps.push({
+          x:pt.x+(Math.random()-0.5)*4, y:pt.y+(Math.random()-0.5)*4,
+          vx:(Math.random()-0.5)*1.6, vy:-Math.random()*1.8-0.3,
+          ax:(Math.random()-0.5)*0.02, ay:-0.025,
+          size:1.2+Math.random()*2.4,
+          color:a.color,
+          baseAlpha:0.7+Math.random()*0.3,
+          life:1,
+          decay:0.005+Math.random()*0.008,
+        });
+      }
+    });
+  });
+  dissolveParticles=ps;
+  dissolveActive=true;
+  dissolveStart=performance.now();
+}
+
+function updateDissolve(){
+  if(!dissolveActive)return 1;
+  const elapsed=performance.now()-dissolveStart;
+  const lineOpacity=Math.max(0,1-elapsed/600);
+  for(let i=dissolveParticles.length-1;i>=0;i--){
+    const p=dissolveParticles[i];
+    p.vx+=p.ax;p.vy+=p.ay;
+    p.x+=p.vx;p.y+=p.vy;
+    p.life-=p.decay;
+    if(p.life<=0)dissolveParticles.splice(i,1);
+  }
+  if(elapsed>=600&&state.actions.length>0){
+    state.actions=[];state.redo=[];state.current=null;drawing=false;
+  }
+  if(elapsed>=DISSOLVE_MS){dissolveActive=false;dissolveParticles=[];}
+  return lineOpacity;
+}
+
+function drawDissolveParticles(){
+  ctx.save();
+  for(const p of dissolveParticles){
+    if(p.life<=0)continue;
+    ctx.globalAlpha=p.life*p.baseAlpha;
+    ctx.fillStyle=p.color;
+    ctx.shadowColor=p.color;ctx.shadowBlur=6;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+  if(snapFlashAlpha>0){
+    ctx.save();
+    ctx.fillStyle=`rgba(255,220,140,${snapFlashAlpha})`;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+    snapFlashAlpha*=0.85;
+    if(snapFlashAlpha<0.01)snapFlashAlpha=0;
+  }
+}
+
 function handleHands(allLM,allHand){
   const count=allLM?.length??0; handCountEl.textContent=count;
-  if(!count){pinchCursor.style.display='none';resetAllZones();sCtx.clearRect(0,0,skeletonCanvas.width,skeletonCanvas.height);return;}
+  if(!count){
+    pinchCursor.style.display='none';resetAllZones();
+    sCtx.clearRect(0,0,skeletonCanvas.width,skeletonCanvas.height);
+    if(SNAP.state!=='SNAPPING'){SNAP.state='IDLE';SNAP.charge=0;SNAP.history.length=0;}
+    return;
+  }
   drawAllHands(allLM,allHand);
   const lm=allLM[0];if(!lm||lm.length<21)return;
+  // 💎 Snap-жест (если включён): ищем правую руку среди всех обнаруженных
+  if(snapGestureEnabled){
+    let rightIdx=-1;
+    for(let i=0;i<allLM.length;i++){
+      if(getUserHandLabel(allHand?.[i]?.[0]?.categoryName)==='R'){rightIdx=i;break;}
+    }
+    if(rightIdx>=0){
+      updateSnapGesture(allLM[rightIdx],'R');
+      drawInfinityGems(allLM[rightIdx]);
+    } else {
+      updateSnapGesture(lm,'?');
+    }
+  } else if(SNAP.state!=='IDLE'){
+    // Принудительно сбрасываем, если жест отключили во время работы
+    SNAP.state='IDLE';SNAP.charge=0;SNAP.history.length=0;
+  }
   pinchCursor.style.display='block';
   const thumb=lm[4],idx=lm[8];
   const isPinching=Math.hypot(thumb.x-idx.x,thumb.y-idx.y)<PINCH_THRESHOLD;
@@ -847,6 +1121,11 @@ function handleHands(allLM,allHand){
     pinchCursor.style.left=sx+'px';pinchCursor.style.top=sy+'px';
   }
   pinchCursor.classList.toggle('active',isPinching&&!isFistNow);
+  // Если в процессе snap-жеста — отключаем рисование, UI-клики и зоны
+  if(SNAP.state==='CHARGING'||SNAP.state==='READY'||SNAP.state==='SNAPPING'){
+    resetAllZones();
+    return;
+  }
   tickHotZones(sx,sy);
   if(activeZone||isFistNow)return;
   if(currentMode==='ui')handleUIClick({x:rx,y:ry},isPinching);
