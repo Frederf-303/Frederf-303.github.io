@@ -572,36 +572,39 @@ html, body {
 }
 
 .mode-zone {
-  min-width: 120px;
-  height: 70px;
+  min-width: 168px;
+  height: 96px;
   position: relative;
   transition: var(--transition-smooth);
-  border-radius: 24px;
+  border-radius: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  gap: 4px;
   cursor: pointer;
+  padding: 8px 12px;
 }
 
-.mode-zone.active { background: rgba(255,255,255,0.25); box-shadow: 0 0 25px currentColor, inset 0 0 15px rgba(255,255,255,0.1); }
-.mode-zone:hover { background: rgba(255,255,255,0.2); transform: scale(1.08); }
+.mode-zone.active { background: rgba(255,255,255,0.28); box-shadow: 0 0 30px currentColor, inset 0 0 18px rgba(255,255,255,0.12); }
+.mode-zone:hover { background: rgba(255,255,255,0.22); transform: scale(1.08); }
 
 .mode-indicator {
-  font-size: 22px;
-  opacity: 0.7;
+  font-size: 32px;
+  opacity: 0.85;
   transition: var(--transition-smooth);
+  line-height: 1;
 }
 
 .mode-zone:hover .mode-indicator { opacity: 1; transform: scale(1.2); }
 
 .mode-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  opacity: 0.9;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  letter-spacing: 0.8px;
+  opacity: 1;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 12px currentColor;
 }
 
 .zone-movexy { color: #FF0202; background: rgba(255,2,2,0.2); border: 2px solid rgba(255,2,2,0.4); }
@@ -774,26 +777,49 @@ html, body {
 .hot-zone {
   position: fixed; z-index: 700; pointer-events: none;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, rgba(75,227,255,0.04), rgba(75,227,255,0.02));
-  border: 1px solid rgba(75,227,255,0.15);
-  transition: background 0.3s, border-color 0.3s, opacity 0.4s;
+  /* Матовое стекло как у панелей */
+  background: linear-gradient(160deg, rgba(28, 34, 50, 0.62) 0%, rgba(14, 18, 28, 0.68) 100%);
+  backdrop-filter: blur(28px) saturate(170%) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(170%) brightness(1.05);
+  border: 1.5px solid rgba(75, 227, 255, 0.35);
+  box-shadow:
+    0 18px 36px -10px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(75, 227, 255, 0.12);
+  transition: background 0.3s, border-color 0.3s, opacity 0.4s, box-shadow 0.3s;
 }
 .hot-zone.hovered {
-  background: linear-gradient(135deg, rgba(75,227,255,0.16), rgba(75,227,255,0.08));
-  border-color: rgba(75,227,255,0.45);
+  background: linear-gradient(160deg, rgba(75,227,255,0.42) 0%, rgba(75,227,255,0.22) 100%);
+  border-color: rgba(75,227,255,0.95);
+  box-shadow:
+    0 22px 44px -10px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 0 30px rgba(75, 227, 255, 0.25),
+    0 0 44px rgba(75,227,255,0.5);
 }
 .hz-hint {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  opacity: 0.25; transition: opacity 0.3s; pointer-events: none; user-select: none;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  opacity: 0.85; transition: opacity 0.3s; pointer-events: none; user-select: none;
 }
-.hot-zone.hovered .hz-hint { opacity: 0.9; }
+.hot-zone.hovered .hz-hint { opacity: 1; }
 .hz-hint span {
-  font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--accent-primary); white-space: nowrap;
-  text-shadow: 0 0 8px rgba(75,227,255,0.5);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow: 0 0 10px rgba(75,227,255,0.8), 0 2px 4px rgba(0,0,0,0.6);
 }
-.hz-dots { display: flex; gap: 6px; }
-.hz-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-primary); opacity: 0.6; }
+.hz-dots { display: flex; gap: 8px; }
+.hz-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  opacity: 0.95;
+  box-shadow: 0 0 8px var(--accent-primary);
+}
 
 #hotZoneBottom {
   top: 0; bottom: auto; left: 50%; transform: translateX(-50%);
@@ -1009,7 +1035,7 @@ html, body {
   <div class="mode-zone zone-movexy" id="zoneMoveXY">
     <button class="zone-button" onclick="setMode('movexy')"></button>
     <div class="mode-indicator">📍</div>
-    <div class="mode-label">XY</div>
+    <div class="mode-label">Переместить</div>
   </div>
   <div class="mode-zone zone-movez" id="zoneMoveZ">
     <button class="zone-button" onclick="setMode('movez')"></button>
@@ -1421,8 +1447,13 @@ window.toggleBackground = () => {
 
 document.getElementById("bgColorPicker").addEventListener("input", e => {
   bgColor = e.target.value;
-  if (isBackgroundEnabled && !customBackground)
-    scene.background = new THREE.Color(bgColor);
+  // Если фон был выключен — автоматически включим, чтобы выбор цвета сразу был виден
+  if (!isBackgroundEnabled) {
+    isBackgroundEnabled = true;
+    document.getElementById("bgToggleBtn").classList.add("active");
+  }
+  customBackground = null;
+  scene.background = new THREE.Color(bgColor);
 });
 
 window.toggleCamera = () => {
@@ -1620,7 +1651,7 @@ const SNAP = {
   state: 'IDLE',          // IDLE | CHARGING | READY | SNAPPING
   charge: 0,
   chargeStart: 0,
-  CHARGE_MS: 1500,
+  CHARGE_MS: 2800,
   STATIONARY_THR: 0.09,
   history: [],
   HIST_SIZE: 14,
@@ -1649,7 +1680,8 @@ function getUserHandLabel(c) {
 function detectPalmFacing(lm) {
   const w = lm[0], iM = lm[5], pM = lm[17];
   const cross = (iM.x - w.x) * (pM.y - w.y) - (iM.y - w.y) * (pM.x - w.x);
-  return cameraMirrored ? cross > SNAP.PALM_THR : cross < -SNAP.PALM_THR;
+  // Тыльная сторона правой руки к камере (ладонь от камеры): инвертировано
+  return cameraMirrored ? cross < -SNAP.PALM_THR : cross > SNAP.PALM_THR;
 }
 function detectSnap(lm) {
   return Math.hypot(lm[4].x - lm[12].x, lm[4].y - lm[12].y) < SNAP.SNAP_DIST;
@@ -1692,11 +1724,11 @@ function updateSnapGesture(lm, userHand) {
         SNAP.chargeStart = performance.now();
         SNAP.charge = 0;
       } else if (palm && ext) {
-        snapHint('⏸ Замри на 1.5 с');
+        snapHint('⏸ Замри на 3 с');
       } else if (palm) {
         snapHint('✋ Раскрой пальцы');
       } else if (ext) {
-        snapHint('🖐️ Поверни ладонь к камере');
+        snapHint('🖐️ Поверни тыльной стороной к камере');
       }
       break;
     case 'CHARGING':
