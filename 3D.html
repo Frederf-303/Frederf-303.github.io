@@ -2275,14 +2275,42 @@ function handleHandLandmarks(landmarks, handednesses) {
 }
 
 /* ── Цикл распознавания ── */
+// ── ПЛАВНАЯ ОТРИСОВКА: детекция через кадр + лерп landmark'ов каждый rAF ──
+let _detectFrame = 0, _lastRes = null, _smoothLM = null;
+const LM_LERP = 0.55;
 function startHandLoop() {
   function loop() {
     if (handLandmarker && videoReady && handDetectionActive) {
       try {
-        const res = handLandmarker.detectForVideo(video, performance.now());
-        // Сначала скелет руки, потом жесты + камни поверх — иначе clearRect стирает камни
-        drawAllHands_sk(res.landmarks?.length ? res.landmarks : null, res.handednesses);
-        handleHandLandmarks(res.landmarks?.length ? res.landmarks : null, res.handednesses);
+        _detectFrame++;
+        // Детекция каждый второй кадр — экономит CPU
+        if (_detectFrame % 2 === 0) {
+          _lastRes = handLandmarker.detectForVideo(video, performance.now());
+        }
+        const target = _lastRes?.landmarks;
+        if (target?.length) {
+          // Инициализация/ресайз буфера сглаживания
+          if (!_smoothLM || _smoothLM.length !== target.length ||
+              (_smoothLM[0] && target[0] && _smoothLM[0].length !== target[0].length)) {
+            _smoothLM = target.map(h => h.map(p => ({ x: p.x, y: p.y, z: p.z })));
+          } else {
+            // Плавный EMA-лерп каждый rAF между свежими детекциями
+            for (let h = 0; h < target.length; h++) {
+              const t = target[h], s = _smoothLM[h];
+              for (let i = 0; i < t.length; i++) {
+                s[i].x = s[i].x * (1 - LM_LERP) + t[i].x * LM_LERP;
+                s[i].y = s[i].y * (1 - LM_LERP) + t[i].y * LM_LERP;
+                s[i].z = s[i].z * (1 - LM_LERP) + t[i].z * LM_LERP;
+              }
+            }
+          }
+          drawAllHands_sk(_smoothLM, _lastRes.handednesses);
+          handleHandLandmarks(_smoothLM, _lastRes.handednesses);
+        } else {
+          _smoothLM = null;
+          drawAllHands_sk(null, null);
+          handleHandLandmarks(null, null);
+        }
       } catch (e) {
         console.warn("Hand detection error:", e);
       }
